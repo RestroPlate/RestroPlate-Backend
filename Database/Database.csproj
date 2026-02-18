@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="dbup-mysql" Version="6.1.0" />
     <EmbeddedResource Include="scripts\*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dbup-sqlserver" Version="6.0.16" />
   </ItemGroup>
 
 </Project>
