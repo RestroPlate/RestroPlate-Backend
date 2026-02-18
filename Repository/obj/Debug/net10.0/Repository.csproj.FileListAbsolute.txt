@@ -1,0 +1,15 @@
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/bin/Debug/net10.0/Repository.deps.json
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/bin/Debug/net10.0/Repository.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/bin/Debug/net10.0/Repository.pdb
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/bin/Debug/net10.0/Models.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/bin/Debug/net10.0/Models.pdb
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.csproj.AssemblyReference.cache
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.GeneratedMSBuildEditorConfig.editorconfig
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.AssemblyInfoInputs.cache
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.AssemblyInfo.cs
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.csproj.CoreCompileInputs.cache
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.csproj.Up2Date
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/refint/Repository.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/Repository.pdb
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Repository/obj/Debug/net10.0/ref/Repository.dll
