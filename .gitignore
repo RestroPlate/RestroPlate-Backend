@@ -1,3 +1,6 @@
 db_connection.txt
 
 .vscode
+
+# Environment variables
+.env
