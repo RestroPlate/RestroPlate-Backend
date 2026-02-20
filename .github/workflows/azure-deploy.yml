@@ -94,33 +94,15 @@ jobs:
           name: published-artifacts
           path: published
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: './published/webapp'
-
-      - name: Set Web App Configuration
-        run: |
-          az webapp config appsettings set \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --settings \
-              ConnectionStrings__DefaultConnection="${{ secrets.AZURE_SQL_CONNECTION_STRING }}" \
-              ASPNETCORE_ENVIRONMENT="Production" \
-              WEBSITE_RUN_FROM_PACKAGE="1"
 
       - name: Verify Deployment
         run: |
-          echo "Deployment completed successfully!"
+          echo "Deployment completed successfully using Publish Profile!"
           echo "App URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
           echo "API Health Check: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/api/test/db-check"
-
-      - name: Logout from Azure
-        if: always()
-        run: az logout
