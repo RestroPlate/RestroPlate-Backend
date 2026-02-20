@@ -4,30 +4,27 @@ using RestroPlate.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register services.
 builder.Services.AddControllers();
-
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
-// REGISTER THE CONNECTION FACTORY
+// Register connections
 builder.Services.AddSingleton<IConnectionFactory, ConnectionFactory>();
-
-// REGISTER THE REPOSITORY
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 
-// --- OPTIONAL: Add Swagger UI (If you want the visual test page) ---
 if (app.Environment.IsDevelopment())
 {
-    // If you are using .NET 9 Preview "AddOpenApi", you might need:
-    // app.MapOpenApi(); 
-    // BUT for standard development, we usually just rely on direct URLs first.
+    app.MapOpenApi();
+
+    // Add Swagger UI
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
-
-// --- 2. ADD THIS LINE ---
-// This tells the app to actually USE the controllers it found to handle requests
 app.MapControllers();
 
 app.Run();

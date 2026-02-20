@@ -73,3 +73,6 @@
 /home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/obj/Debug/net10.0/Controllers.pdb
 /home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/obj/Debug/net10.0/Controllers.genruntimeconfig.cache
 /home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/obj/Debug/net10.0/ref/Controllers.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/bin/Debug/net10.0/Swashbuckle.AspNetCore.Swagger.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/bin/Debug/net10.0/Swashbuckle.AspNetCore.SwaggerGen.dll
+/home/sathindu/Documents/SLIIT/Year 3/Semester 1/CSP/assignment/project/RestroPlate/Controllers/bin/Debug/net10.0/Swashbuckle.AspNetCore.SwaggerUI.dll
