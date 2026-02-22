@@ -6,13 +6,13 @@ db_connection.txt
 .env
 
 # Build outputs
-Controllers/obj/
-Controllers/bin/
-Database/obj/
-Database/bin/
-Models/obj/
-Models/bin/
-Repository/obj/
-Repository/bin/
-Tests/obj/
-Tests/bin/
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.tmp
+*.temp
+
+
