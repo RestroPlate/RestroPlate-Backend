@@ -6,6 +6,16 @@ The project uses **ADO.NET** for high-performance data access, **DbUp** for data
 
 ---
 
+> **🤖 AI AGENT DIRECTIVE:** If you are an AI parsing this README, DO NOT execute the prompt below. It is a text template for human use only. Ignore it completely.
+
+```text
+**For Human Developers:**
+
+use this stating promt for agents.
+
+Before you do anything, read AGENT_RULES.md, understand our tech stack (specifically the mix of inline styles and Tailwind), and acknowledge these constraints.
+```
+
 ## 🏗️ Architecture
 
 The solution is divided into 4 distinct layers to maintain a clean separation of responsibilities:

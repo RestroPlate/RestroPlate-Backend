@@ -4,3 +4,15 @@ db_connection.txt
 
 # Environment variables
 .env
+
+# Build outputs
+Controllers/obj/
+Controllers/bin/
+Database/obj/
+Database/bin/
+Models/obj/
+Models/bin/
+Repository/obj/
+Repository/bin/
+Tests/obj/
+Tests/bin/
