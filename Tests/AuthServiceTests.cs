@@ -15,9 +15,9 @@ public class AuthServiceTests
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["JWT__Secret"]   = "TestSecretKeyThatIsAtLeast32CharactersLongForTests!",
-                ["JWT__Issuer"]   = "RestroPlate",
-                ["JWT__Audience"] = "RestroPlate"
+                ["JWT:Secret"]   = "TestSecretKeyThatIsAtLeast32CharactersLongForTests!",
+                ["JWT:Issuer"]   = "RestroPlate",
+                ["JWT:Audience"] = "RestroPlate"
             })
             .Build();
 
