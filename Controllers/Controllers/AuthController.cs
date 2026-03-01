@@ -4,8 +4,8 @@ using RestroPlate.Models.Interfaces;
 
 namespace RestroPlate.Controllers.Controllers
 {
-    [ApiController]
-    [Route("api/auth")]
+    [ApiController] // Marks this class as an API controller
+    [Route("api/auth")] // Base route for authentication-related endpoints
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -16,7 +16,8 @@ namespace RestroPlate.Controllers.Controllers
         }
 
         /// <summary>
-        /// Register a new Donation Provider or Distribution Center account.
+        /// Registers a new Donation Provider or Distribution Center account.
+        /// Endpoint: POST api/auth/register
         /// </summary>
         [HttpPost("register")]
         [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
