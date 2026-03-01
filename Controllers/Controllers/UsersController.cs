@@ -6,9 +6,9 @@ using System.Security.Claims;
 
 namespace RestroPlate.Controllers.Controllers
 {
-    [ApiController]
-    [Route("api/users")]
-    [Authorize]
+    [ApiController] // Marks this class as an API controller
+    [Route("api/users")] // Base route for all endpoints in this controller
+    [Authorize] // Ensures that all endpoints require authentication (JWT token)
     public class UsersController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -19,7 +19,9 @@ namespace RestroPlate.Controllers.Controllers
         }
 
         /// <summary>
-        /// Get the authenticated user's profile. Requires a valid JWT Bearer token.
+        /// Retrieves the authenticated user's profile.
+        /// Requires a valid JWT Bearer token.
+        /// Endpoint: GET api/users/me
         /// </summary>
         [HttpGet("me")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
