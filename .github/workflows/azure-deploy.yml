@@ -47,6 +47,22 @@ jobs:
             --output ./publish/database \
             --no-build
 
+      - name: Inject secrets into appsettings.json
+        run: |
+          jq \
+            --arg  cs      "${{ secrets.AZURE_SQL_CONNECTION_STRING }}" \
+            --arg  sec     "${{ secrets.JWT_SECRET }}" \
+            --arg  iss     "${{ secrets.JWT_ISSUER }}" \
+            --arg  aud     "${{ secrets.JWT_AUDIENCE }}" \
+            --arg  origins "${{ secrets.ALLOWED_ORIGINS }}" \
+            '.ConnectionStrings.DefaultConnection = $cs |
+             .JWT.Secret   = $sec |
+             .JWT.Issuer   = $iss |
+             .JWT.Audience = $aud |
+             .Cors.AllowedOrigins = (if $origins == "" then [] else ($origins | split(",")) end)' \
+            Controllers/appsettings.json > Controllers/appsettings.tmp.json
+          mv Controllers/appsettings.tmp.json Controllers/appsettings.json
+
       - name: Publish Web API
         run: |
           dotnet publish Controllers/Controllers.csproj \
