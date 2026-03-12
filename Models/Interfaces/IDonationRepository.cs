@@ -3,6 +3,6 @@ namespace RestroPlate.Models.Interfaces
     public interface IDonationRepository
     {
         Task<int> CreateAsync(Donation donation);
-        Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId);
+        Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId, string? status = null);
     }
 }

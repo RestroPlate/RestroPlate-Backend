@@ -45,15 +45,23 @@ namespace RestroPlate.Controllers.Controllers
         [HttpGet]
         [HttpGet("me")]
         [ProducesResponseType(typeof(IReadOnlyList<DonationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetMyDonations()
+        public async Task<IActionResult> GetMyDonations([FromQuery] string? status = null)
         {
             var userId = GetAuthenticatedUserId();
             if (userId is null)
                 return Unauthorized(new { message = "Invalid token." });
 
-            var donations = await _donationService.GetUserDonationsAsync(userId.Value);
-            return Ok(donations);
+            try
+            {
+                var donations = await _donationService.GetUserDonationsAsync(userId.Value, status);
+                return Ok(donations);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         private int? GetAuthenticatedUserId()

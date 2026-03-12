@@ -120,4 +120,36 @@ public class DonationServiceTests
         Assert.Equal(createdAt, donation.CreatedAt);
         mockRepo.Verify(r => r.GetByUserIdAsync(3), Times.Once);
     }
+
+    [Fact]
+    public async Task GetUserDonations_WithValidStatusFilter_NormalizesStatusBeforeQueryingRepository()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo
+            .Setup(r => r.GetByUserIdAsync(5, "requested"))
+            .ReturnsAsync(new List<Donation>());
+
+        var service = new DonationService(mockRepo.Object);
+
+        // Act
+        var result = await service.GetUserDonationsAsync(5, " Requested ");
+
+        // Assert
+        Assert.Empty(result);
+        mockRepo.Verify(r => r.GetByUserIdAsync(5, "requested"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUserDonations_WithInvalidStatus_ThrowsArgumentException()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        var service = new DonationService(mockRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.GetUserDonationsAsync(5, "archived"));
+        Assert.Equal("Status must be one of: available, requested, collected, completed.", exception.Message);
+        mockRepo.Verify(r => r.GetByUserIdAsync(It.IsAny<int>(), It.IsAny<string?>()), Times.Never);
+    }
 }

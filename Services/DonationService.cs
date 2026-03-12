@@ -6,6 +6,14 @@ namespace RestroPlate.Services
 {
     public class DonationService : IDonationService
     {
+        private static readonly HashSet<string> AllowedStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "available",
+            "requested",
+            "collected",
+            "completed"
+        };
+
         private readonly IDonationRepository _donationRepository;
 
         public DonationService(IDonationRepository donationRepository)
@@ -35,9 +43,10 @@ namespace RestroPlate.Services
             return MapToResponse(donation);
         }
 
-        public async Task<IReadOnlyList<DonationResponseDto>> GetUserDonationsAsync(int providerUserId)
+        public async Task<IReadOnlyList<DonationResponseDto>> GetUserDonationsAsync(int providerUserId, string? status = null)
         {
-            var donations = await _donationRepository.GetByUserIdAsync(providerUserId);
+            var normalizedStatus = NormalizeStatus(status);
+            var donations = await _donationRepository.GetByUserIdAsync(providerUserId, normalizedStatus);
             return donations.Select(MapToResponse).ToList();
         }
 
@@ -74,6 +83,18 @@ namespace RestroPlate.Services
 
             if (string.IsNullOrWhiteSpace(request.AvailabilityTime))
                 throw new ArgumentException("Availability time is required.");
+        }
+
+        private static string? NormalizeStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+                return null;
+
+            var normalizedStatus = status.Trim().ToLowerInvariant();
+            if (!AllowedStatuses.Contains(normalizedStatus))
+                throw new ArgumentException("Status must be one of: available, requested, collected, completed.");
+
+            return normalizedStatus;
         }
     }
 }

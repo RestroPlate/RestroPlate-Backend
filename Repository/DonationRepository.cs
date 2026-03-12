@@ -36,7 +36,7 @@ namespace RestroPlate.Repository
             return result is int id ? id : Convert.ToInt32(result);
         }
 
-        public async Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId)
+        public async Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId, string? status = null)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
@@ -45,10 +45,12 @@ namespace RestroPlate.Repository
                 SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE provider_user_id = @ProviderUserId
+                  AND (@Status IS NULL OR status = @Status)
                 ORDER BY created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
+            command.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
 
             var donations = new List<Donation>();
             using var reader = await command.ExecuteReaderAsync();
