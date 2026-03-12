@@ -2,23 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RestroPlate.Models.DTOs;
 using RestroPlate.Models.Interfaces;
-using RestroPlate.Repository;
-using RestroPlate.Services;
 using System.Security.Claims;
 
 namespace RestroPlate.Controllers.Controllers
 {
     [ApiController]
     [Route("api/donations")]
-    [Authorize(Roles = "DONOR")]
+        [Authorize(Roles = "DONOR")]
     public class DonationsController : ControllerBase
     {
         private readonly IDonationService _donationService;
 
-        // Keep existing Program.cs untouched by constructing donation service from already-registered IConnectionFactory.
-        public DonationsController(IConnectionFactory connectionFactory)
+        public DonationsController(IDonationService donationService)
         {
-            _donationService = new DonationService(new DonationRepository(connectionFactory));
+            _donationService = donationService;
         }
 
         [HttpPost]
@@ -45,6 +42,7 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        [HttpGet]
         [HttpGet("me")]
         [ProducesResponseType(typeof(IReadOnlyList<DonationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -54,7 +52,7 @@ namespace RestroPlate.Controllers.Controllers
             if (userId is null)
                 return Unauthorized(new { message = "Invalid token." });
 
-            var donations = await _donationService.GetProviderDonationsAsync(userId.Value);
+            var donations = await _donationService.GetUserDonationsAsync(userId.Value);
             return Ok(donations);
         }
 

@@ -36,7 +36,7 @@ namespace RestroPlate.Repository
             return result is int id ? id : Convert.ToInt32(result);
         }
 
-        public async Task<IReadOnlyList<Donation>> GetByProviderUserIdAsync(int providerUserId)
+        public async Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();

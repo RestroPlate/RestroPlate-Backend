@@ -35,9 +35,9 @@ namespace RestroPlate.Services
             return MapToResponse(donation);
         }
 
-        public async Task<IReadOnlyList<DonationResponseDto>> GetProviderDonationsAsync(int providerUserId)
+        public async Task<IReadOnlyList<DonationResponseDto>> GetUserDonationsAsync(int providerUserId)
         {
-            var donations = await _donationRepository.GetByProviderUserIdAsync(providerUserId);
+            var donations = await _donationRepository.GetByUserIdAsync(providerUserId);
             return donations.Select(MapToResponse).ToList();
         }
 
