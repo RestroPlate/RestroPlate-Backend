@@ -115,6 +115,24 @@ namespace RestroPlate.Repository
             return affectedRows > 0;
         }
 
+        public async Task<bool> DeleteAsync(int donationId, int providerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                DELETE FROM dbo.donations
+                WHERE donation_id = @DonationId
+                  AND provider_user_id = @ProviderUserId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
         private static Donation MapDonation(SqlDataReader reader) => new()
         {
             DonationId = reader.GetInt32(reader.GetOrdinal("donation_id")),

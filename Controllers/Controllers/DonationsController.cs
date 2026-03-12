@@ -97,6 +97,32 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteDonation(int id)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                await _donationService.DeleteDonationAsync(id, userId.Value);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         private int? GetAuthenticatedUserId()
         {
             var subClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)

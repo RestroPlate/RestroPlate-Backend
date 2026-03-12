@@ -75,6 +75,20 @@ namespace RestroPlate.Services
             return MapToResponse(existingDonation);
         }
 
+        public async Task DeleteDonationAsync(int donationId, int providerUserId)
+        {
+            var existingDonation = await _donationRepository.GetByIdAsync(donationId, providerUserId);
+            if (existingDonation is null)
+                throw new KeyNotFoundException("Donation not found.");
+
+            if (!string.Equals(existingDonation.Status, "available", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Only available donations can be deleted.");
+
+            var deleted = await _donationRepository.DeleteAsync(donationId, providerUserId);
+            if (!deleted)
+                throw new KeyNotFoundException("Donation not found.");
+        }
+
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
             DonationId = donation.DonationId,

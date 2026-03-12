@@ -268,4 +268,78 @@ public class DonationServiceTests
         Assert.Equal("Donation not found.", exception.Message);
         mockRepo.Verify(r => r.UpdateAsync(It.IsAny<Donation>()), Times.Never);
     }
+
+    [Fact]
+    public async Task DeleteDonation_WithAvailableDonation_DeletesDonation()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 15,
+            ProviderUserId = 6,
+            FoodType = "Rice",
+            Quantity = 5,
+            Unit = "packs",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Pickup point",
+            AvailabilityTime = "1:00 PM - 3:00 PM",
+            Status = "available"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(15, 6)).ReturnsAsync(existingDonation);
+        mockRepo.Setup(r => r.DeleteAsync(15, 6)).ReturnsAsync(true);
+
+        var service = new DonationService(mockRepo.Object);
+
+        // Act
+        await service.DeleteDonationAsync(15, 6);
+
+        // Assert
+        mockRepo.Verify(r => r.GetByIdAsync(15, 6), Times.Once);
+        mockRepo.Verify(r => r.DeleteAsync(15, 6), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteDonation_WithNonAvailableDonation_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 16,
+            ProviderUserId = 6,
+            FoodType = "Bread",
+            Quantity = 2,
+            Unit = "boxes",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Pickup point",
+            AvailabilityTime = "4:00 PM - 5:00 PM",
+            Status = "requested"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(16, 6)).ReturnsAsync(existingDonation);
+
+        var service = new DonationService(mockRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteDonationAsync(16, 6));
+        Assert.Equal("Only available donations can be deleted.", exception.Message);
+        mockRepo.Verify(r => r.DeleteAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteDonation_WhenDonationDoesNotExist_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(17, 6)).ReturnsAsync((Donation?)null);
+
+        var service = new DonationService(mockRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.DeleteDonationAsync(17, 6));
+        Assert.Equal("Donation not found.", exception.Message);
+        mockRepo.Verify(r => r.DeleteAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
 }
