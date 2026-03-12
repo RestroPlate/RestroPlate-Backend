@@ -64,6 +64,39 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateDonation(int id, [FromBody] UpdateDonationRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                var updatedDonation = await _donationService.UpdateDonationAsync(id, userId.Value, request);
+                return Ok(updatedDonation);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         private int? GetAuthenticatedUserId()
         {
             var subClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
