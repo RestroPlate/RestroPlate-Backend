@@ -7,5 +7,6 @@ namespace RestroPlate.Models.Interfaces
         Task<Donation?> GetByIdAsync(int donationId, int providerUserId);
         Task<bool> UpdateAsync(Donation donation);
         Task<bool> DeleteAsync(int donationId, int providerUserId);
+        Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy);
     }
 }
