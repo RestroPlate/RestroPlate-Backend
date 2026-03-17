@@ -133,6 +133,49 @@ namespace RestroPlate.Repository
             return affectedRows > 0;
         }
 
+        public async Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                FROM dbo.donations
+                WHERE status = 'available'";
+
+            if (!string.IsNullOrWhiteSpace(location))
+                sql += " AND pickup_address LIKE @Location";
+
+            if (!string.IsNullOrWhiteSpace(foodType))
+                sql += " AND food_type LIKE @FoodType";
+
+            sql += sortBy?.ToLowerInvariant() switch
+            {
+                "expirationdate" => " ORDER BY expiration_date ASC",
+                _ => " ORDER BY created_at DESC"
+            };
+
+            sql += ";";
+
+            using var command = new SqlCommand(sql, connection);
+
+            if (!string.IsNullOrWhiteSpace(location))
+                command.Parameters.AddWithValue("@Location", $"%{location.Trim()}%");
+
+            if (!string.IsNullOrWhiteSpace(foodType))
+                command.Parameters.AddWithValue("@FoodType", $"%{foodType.Trim()}%");
+
+            var donations = new List<Donation>();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                donations.Add(MapDonation(reader));
+            }
+
+            return donations;
+        }
+
         private static Donation MapDonation(SqlDataReader reader) => new()
         {
             DonationId = reader.GetInt32(reader.GetOrdinal("donation_id")),

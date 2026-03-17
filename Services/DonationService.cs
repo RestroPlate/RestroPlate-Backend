@@ -89,6 +89,13 @@ namespace RestroPlate.Services
                 throw new KeyNotFoundException("Donation not found.");
         }
 
+        public async Task<IReadOnlyList<DonationResponseDto>> GetAvailableDonationsAsync(string? location, string? foodType, string? sortBy)
+        {
+            var normalizedSort = NormalizeSortBy(sortBy);
+            var donations = await _donationRepository.GetAvailableAsync(location, foodType, normalizedSort);
+            return donations.Select(MapToResponse).ToList();
+        }
+
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
             DonationId = donation.DonationId,
@@ -155,6 +162,24 @@ namespace RestroPlate.Services
                 throw new ArgumentException("Status must be one of: available, requested, collected, completed.");
 
             return normalizedStatus;
+        }
+
+        private static readonly HashSet<string> AllowedSortFields = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "createdAt",
+            "expirationDate"
+        };
+
+        private static string? NormalizeSortBy(string? sortBy)
+        {
+            if (string.IsNullOrWhiteSpace(sortBy))
+                return null;
+
+            var normalized = sortBy.Trim().ToLowerInvariant();
+            if (!AllowedSortFields.Contains(sortBy.Trim()))
+                throw new ArgumentException("SortBy must be one of: createdAt, expirationDate.");
+
+            return normalized;
         }
     }
 }

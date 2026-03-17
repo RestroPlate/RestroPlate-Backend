@@ -8,7 +8,7 @@ namespace RestroPlate.Controllers.Controllers
 {
     [ApiController]
     [Route("api/donations")]
-        [Authorize(Roles = "DONOR")]
+    [Authorize]
     public class DonationsController : ControllerBase
     {
         private readonly IDonationService _donationService;
@@ -19,6 +19,7 @@ namespace RestroPlate.Controllers.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "DONOR")]
         [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -44,6 +45,7 @@ namespace RestroPlate.Controllers.Controllers
 
         [HttpGet]
         [HttpGet("me")]
+        [Authorize(Roles = "DONOR")]
         [ProducesResponseType(typeof(IReadOnlyList<DonationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -64,7 +66,29 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        [HttpGet("available")]
+        [Authorize(Roles = "DISTRIBUTION_CENTER")]
+        [ProducesResponseType(typeof(IReadOnlyList<DonationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetAvailableDonations(
+            [FromQuery] string? location = null,
+            [FromQuery] string? foodType = null,
+            [FromQuery] string? sortBy = null)
+        {
+            try
+            {
+                var donations = await _donationService.GetAvailableDonationsAsync(location, foodType, sortBy);
+                return Ok(donations);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "DONOR")]
         [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -98,6 +122,7 @@ namespace RestroPlate.Controllers.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "DONOR")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
