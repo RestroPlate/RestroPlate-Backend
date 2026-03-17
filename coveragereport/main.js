@@ -288,10 +288,26 @@ for (i = 0, l = charts.length; i < l; i++) {
 
 var assemblies = [
   {
+    "name": "Models",
+    "classes": [
+      { "name": "RestroPlate.Models.Donation", "rp": "Models_Donation.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.AuthResponseDto", "rp": "Models_AuthResponseDto.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.CreateDonationRequestDto", "rp": "Models_CreateDonationRequestDto.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 12, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.DonationResponseDto", "rp": "Models_DonationResponseDto.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.LoginRequestDto", "rp": "Models_LoginRequestDto.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 8, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.RegisterRequestDto", "rp": "Models_RegisterRequestDto.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.UserProfileDto", "rp": "Models_UserProfileDto.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 13, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.User", "rp": "Models_User.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 14, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
     "name": "Services",
     "classes": [
       { "name": "RestroPlate.Services.AuthService", "rp": "Services_AuthService.html", "cl": 83, "ucl": 0, "cal": 83, "tl": 126, "cb": 21, "tb": 28, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+<<<<<<< HEAD
       { "name": "RestroPlate.Services.DonationService", "rp": "Services_DonationService.html", "cl": 103, "ucl": 25, "cal": 128, "tl": 185, "cb": 28, "tb": 44, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+=======
+      { "name": "RestroPlate.Services.DonationService", "rp": "Services_DonationService.html", "cl": 44, "ucl": 8, "cal": 52, "tl": 79, "cb": 8, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+>>>>>>> a304de1b08182abc08dbb32b80323d725e1233d8
     ]},
 ];
 
