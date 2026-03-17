@@ -63,6 +63,26 @@ namespace RestroPlate.Repository
             return donations;
         }
 
+        public async Task<Donation?> GetByIdAsync(int donationId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                FROM dbo.donations
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            return MapDonation(reader);
+        }
+
         public async Task<Donation?> GetByIdAsync(int donationId, int providerUserId)
         {
             using var connection = (SqlConnection)CreateConnection();
