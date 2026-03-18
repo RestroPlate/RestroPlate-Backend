@@ -15,18 +15,32 @@ namespace RestroPlate.Services
         };
 
         private readonly IDonationRepository _donationRepository;
+        private readonly IDonationRequestRepository _donationRequestRepository;
 
-        public DonationService(IDonationRepository donationRepository)
+        public DonationService(IDonationRepository donationRepository, IDonationRequestRepository donationRequestRepository)
         {
             _donationRepository = donationRepository;
+            _donationRequestRepository = donationRequestRepository;
         }
 
-        public async Task<DonationResponseDto> CreateDonationAsync(int providerUserId, CreateDonationRequestDto request)
+        public async Task<DonationResponseDto> CreateDonationAsync(int providerUserId, CreateDonationDto request)
         {
             ValidateCreateRequest(request);
 
+            if (request.DonationRequestId.HasValue)
+            {
+                var donationRequest = await _donationRequestRepository.GetByIdAsync(request.DonationRequestId.Value);
+                if (donationRequest == null)
+                    throw new KeyNotFoundException("Associated Donation Request not found.");
+                if (donationRequest.Status != "pending")
+                    throw new InvalidOperationException("Can only fulfill pending requests.");
+                    
+                // Optional: Check if fulfillment goes over (left mostly unrestricted for simple logic, but could add check here)
+            }
+
             var donation = new Donation
             {
+                DonationRequestId = request.DonationRequestId,
                 ProviderUserId = providerUserId,
                 FoodType = request.FoodType.Trim(),
                 Quantity = request.Quantity,
@@ -99,6 +113,7 @@ namespace RestroPlate.Services
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
             DonationId = donation.DonationId,
+            DonationRequestId = donation.DonationRequestId,
             ProviderUserId = donation.ProviderUserId,
             FoodType = donation.FoodType,
             Quantity = donation.Quantity,
@@ -110,7 +125,7 @@ namespace RestroPlate.Services
             CreatedAt = donation.CreatedAt
         };
 
-        private static void ValidateCreateRequest(CreateDonationRequestDto request)
+        private static void ValidateCreateRequest(CreateDonationDto request)
         {
             if (string.IsNullOrWhiteSpace(request.FoodType))
                 throw new ArgumentException("Food type is required.");

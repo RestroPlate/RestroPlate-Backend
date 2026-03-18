@@ -24,7 +24,7 @@ namespace RestroPlate.Controllers.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> CreateDonationRequest([FromBody] CreateDonationRequestRequestDto request)
+        public async Task<IActionResult> CreateDonationRequest([FromBody] CreateDonationRequestDto request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -52,12 +52,13 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPut("{donationRequestId}/quantity")]
         [Authorize(Roles = "DONOR")]
-        [ProducesResponseType(typeof(IReadOnlyList<DonationRequestResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(DonationRequestResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetProviderRequests([FromQuery] string? status = null)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateRequestQuantity(int donationRequestId, [FromBody] UpdateDonationRequestQuantityDto request)
         {
             var userId = GetAuthenticatedUserId();
             if (userId is null)
@@ -65,7 +66,33 @@ namespace RestroPlate.Controllers.Controllers
 
             try
             {
-                var requests = await _donationRequestService.GetProviderRequestsAsync(userId.Value, status);
+                var updatedRequest = await _donationRequestService.UpdateDonationRequestQuantityAsync(donationRequestId, request.DonatedQuantity);
+                return Ok(updatedRequest);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("available")]
+        [Authorize(Roles = "DONOR")]
+        [ProducesResponseType(typeof(IReadOnlyList<DonationRequestResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetAvailableRequests([FromQuery] string? status = null)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                var requests = await _donationRequestService.GetAvailableRequestsAsync(status);
                 return Ok(requests);
             }
             catch (ArgumentException ex)

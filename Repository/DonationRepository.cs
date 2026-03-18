@@ -17,12 +17,13 @@ namespace RestroPlate.Repository
 
             const string sql = @"
                 INSERT INTO dbo.donations
-                (provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
+                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
                 OUTPUT INSERTED.donation_id
                 VALUES
-                (@ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
+                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
 
             using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", (object?)donation.DonationRequestId ?? DBNull.Value);
             command.Parameters.AddWithValue("@ProviderUserId", donation.ProviderUserId);
             command.Parameters.AddWithValue("@FoodType", donation.FoodType);
             command.Parameters.AddWithValue("@Quantity", donation.Quantity);
@@ -42,7 +43,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE provider_user_id = @ProviderUserId
                   AND (@Status IS NULL OR status = @Status)
@@ -69,7 +70,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId;";
 
@@ -89,7 +90,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId
                   AND provider_user_id = @ProviderUserId;";
@@ -159,7 +160,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE status = 'available'";
 
@@ -196,9 +197,27 @@ namespace RestroPlate.Repository
             return donations;
         }
 
+        public async Task<decimal> GetTotalFulfilledQuantityAsync(int donationRequestId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT ISNULL(SUM(quantity), 0)
+                FROM dbo.donations
+                WHERE donation_request_id = @DonationRequestId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", donationRequestId);
+
+            var result = await command.ExecuteScalarAsync();
+            return Convert.ToDecimal(result ?? 0);
+        }
+
         private static Donation MapDonation(SqlDataReader reader) => new()
         {
             DonationId = reader.GetInt32(reader.GetOrdinal("donation_id")),
+            DonationRequestId = !reader.IsDBNull(reader.GetOrdinal("donation_request_id")) ? reader.GetInt32(reader.GetOrdinal("donation_request_id")) : null,
             ProviderUserId = reader.GetInt32(reader.GetOrdinal("provider_user_id")),
             FoodType = reader.GetString(reader.GetOrdinal("food_type")),
             Quantity = reader.GetDecimal(reader.GetOrdinal("quantity")),

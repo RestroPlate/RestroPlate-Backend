@@ -14,73 +14,44 @@ namespace RestroPlate.Repository
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
-            using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            
+            const string sql = @"
+                INSERT INTO dbo.donation_requests
+                (distribution_center_user_id, food_type, requested_quantity, unit, status)
+                OUTPUT INSERTED.donation_request_id, INSERTED.created_at
+                VALUES
+                (@DistributionCenterUserId, @FoodType, @RequestedQuantity, @Unit, @Status);";
 
-            try
-            {
-                const string updateDonationSql = @"
-                    UPDATE dbo.donations
-                    SET status = 'requested'
-                    WHERE donation_id = @DonationId
-                      AND status = 'available';";
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DistributionCenterUserId", donationRequest.DistributionCenterUserId);
+            command.Parameters.AddWithValue("@FoodType", donationRequest.FoodType);
+            command.Parameters.AddWithValue("@RequestedQuantity", donationRequest.RequestedQuantity);
+            command.Parameters.AddWithValue("@Unit", donationRequest.Unit);
+            command.Parameters.AddWithValue("@Status", donationRequest.Status);
 
-                using (var updateDonationCommand = new SqlCommand(updateDonationSql, connection, transaction))
-                {
-                    updateDonationCommand.Parameters.AddWithValue("@DonationId", donationRequest.DonationId);
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                throw new InvalidOperationException("Failed to create donation request.");
 
-                    var affectedRows = await updateDonationCommand.ExecuteNonQueryAsync();
-                    if (affectedRows == 0)
-                        throw new InvalidOperationException("Donation is no longer available.");
-                }
+            donationRequest.DonationRequestId = reader.GetInt32(0);
+            donationRequest.CreatedAt = reader.GetDateTime(1);
 
-                const string insertSql = @"
-                    INSERT INTO dbo.donation_requests
-                    (donation_id, distribution_center_user_id, requested_quantity, status)
-                    OUTPUT INSERTED.donation_request_id, INSERTED.created_at
-                    VALUES
-                    (@DonationId, @DistributionCenterUserId, @RequestedQuantity, @Status);";
-
-                using var insertCommand = new SqlCommand(insertSql, connection, transaction);
-                insertCommand.Parameters.AddWithValue("@DonationId", donationRequest.DonationId);
-                insertCommand.Parameters.AddWithValue("@DistributionCenterUserId", donationRequest.DistributionCenterUserId);
-                insertCommand.Parameters.AddWithValue("@RequestedQuantity", donationRequest.RequestedQuantity);
-                insertCommand.Parameters.AddWithValue("@Status", donationRequest.Status);
-
-                using var reader = await insertCommand.ExecuteReaderAsync();
-                if (!await reader.ReadAsync())
-                    throw new InvalidOperationException("Failed to create donation request.");
-
-                donationRequest.DonationRequestId = reader.GetInt32(0);
-                donationRequest.CreatedAt = reader.GetDateTime(1);
-
-                await reader.CloseAsync();
-                await transaction.CommitAsync();
-
-                return donationRequest;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            return donationRequest;
         }
 
-        public async Task<IReadOnlyList<DonationRequest>> GetByProviderUserIdAsync(int providerUserId, string? status = null)
+        public async Task<IReadOnlyList<DonationRequest>> GetAvailableAsync(string? status = null)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT dr.donation_request_id, dr.donation_id, d.provider_user_id, dr.distribution_center_user_id,
-                       dr.requested_quantity, dr.status, dr.created_at, d.food_type, d.unit
-                FROM dbo.donation_requests dr
-                INNER JOIN dbo.donations d ON d.donation_id = dr.donation_id
-                WHERE d.provider_user_id = @ProviderUserId
-                  AND (@Status IS NULL OR dr.status = @Status)
-                ORDER BY dr.created_at DESC;";
+                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
+                FROM dbo.donation_requests
+                WHERE status = 'pending'
+                  AND (@Status IS NULL OR status = @Status)
+                ORDER BY created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
-            command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
             command.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
 
             var donationRequests = new List<DonationRequest>();
@@ -100,13 +71,11 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT dr.donation_request_id, dr.donation_id, d.provider_user_id, dr.distribution_center_user_id,
-                       dr.requested_quantity, dr.status, dr.created_at, d.food_type, d.unit
-                FROM dbo.donation_requests dr
-                INNER JOIN dbo.donations d ON d.donation_id = dr.donation_id
-                WHERE dr.distribution_center_user_id = @DistributionCenterUserId
-                  AND (@Status IS NULL OR dr.status = @Status)
-                ORDER BY dr.created_at DESC;";
+                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
+                FROM dbo.donation_requests
+                WHERE distribution_center_user_id = @DistributionCenterUserId
+                  AND (@Status IS NULL OR status = @Status)
+                ORDER BY created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@DistributionCenterUserId", distributionCenterUserId);
@@ -123,11 +92,53 @@ namespace RestroPlate.Repository
             return donationRequests;
         }
 
+        public async Task<DonationRequest?> GetByIdAsync(int donationRequestId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
+                FROM dbo.donation_requests
+                WHERE donation_request_id = @DonationRequestId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", donationRequestId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            return MapDonationRequest(reader);
+        }
+
+        public async Task<bool> UpdateAsync(DonationRequest donationRequest)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donation_requests
+                SET food_type = @FoodType,
+                    requested_quantity = @RequestedQuantity,
+                    unit = @Unit,
+                    status = @Status
+                WHERE donation_request_id = @DonationRequestId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", donationRequest.DonationRequestId);
+            command.Parameters.AddWithValue("@FoodType", donationRequest.FoodType);
+            command.Parameters.AddWithValue("@RequestedQuantity", donationRequest.RequestedQuantity);
+            command.Parameters.AddWithValue("@Unit", donationRequest.Unit);
+            command.Parameters.AddWithValue("@Status", donationRequest.Status);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
         private static DonationRequest MapDonationRequest(SqlDataReader reader) => new()
         {
             DonationRequestId = reader.GetInt32(reader.GetOrdinal("donation_request_id")),
-            DonationId = reader.GetInt32(reader.GetOrdinal("donation_id")),
-            ProviderUserId = reader.GetInt32(reader.GetOrdinal("provider_user_id")),
             DistributionCenterUserId = reader.GetInt32(reader.GetOrdinal("distribution_center_user_id")),
             RequestedQuantity = reader.GetDecimal(reader.GetOrdinal("requested_quantity")),
             Status = reader.GetString(reader.GetOrdinal("status")),

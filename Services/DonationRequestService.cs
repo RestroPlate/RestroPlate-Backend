@@ -9,52 +9,37 @@ namespace RestroPlate.Services
         private static readonly HashSet<string> AllowedRequestStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
             "pending",
-            "approved",
-            "rejected"
+            "completed"
         };
 
-        private readonly IDonationRepository _donationRepository;
         private readonly IDonationRequestRepository _donationRequestRepository;
 
-        public DonationRequestService(IDonationRepository donationRepository, IDonationRequestRepository donationRequestRepository)
+        public DonationRequestService(IDonationRequestRepository donationRequestRepository)
         {
-            _donationRepository = donationRepository;
             _donationRequestRepository = donationRequestRepository;
         }
 
-        public async Task<DonationRequestResponseDto> CreateDonationRequestAsync(int distributionCenterUserId, CreateDonationRequestRequestDto request)
+        public async Task<DonationRequestResponseDto> CreateDonationRequestAsync(int distributionCenterUserId, CreateDonationRequestDto request)
         {
             ValidateCreateRequest(request);
 
-            var donation = await _donationRepository.GetByIdAsync(request.DonationId);
-            if (donation is null)
-                throw new KeyNotFoundException("Donation not found.");
-
-            if (!string.Equals(donation.Status, "available", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Only available donations can be requested.");
-
-            if (request.RequestedQuantity > donation.Quantity)
-                throw new ArgumentException("Requested quantity cannot exceed available donation quantity.");
-
             var donationRequest = new DonationRequest
             {
-                DonationId = donation.DonationId,
-                ProviderUserId = donation.ProviderUserId,
                 DistributionCenterUserId = distributionCenterUserId,
+                FoodType = request.FoodType.Trim(),
                 RequestedQuantity = request.RequestedQuantity,
-                Status = "pending",
-                FoodType = donation.FoodType,
-                Unit = donation.Unit
+                Unit = request.Unit.Trim(),
+                Status = "pending"
             };
 
             var createdDonationRequest = await _donationRequestRepository.CreateAsync(donationRequest);
             return MapToResponse(createdDonationRequest);
         }
 
-        public async Task<IReadOnlyList<DonationRequestResponseDto>> GetProviderRequestsAsync(int providerUserId, string? status = null)
+        public async Task<IReadOnlyList<DonationRequestResponseDto>> GetAvailableRequestsAsync(string? status = null)
         {
             var normalizedStatus = NormalizeStatus(status);
-            var requests = await _donationRequestRepository.GetByProviderUserIdAsync(providerUserId, normalizedStatus);
+            var requests = await _donationRequestRepository.GetAvailableAsync(normalizedStatus);
             return requests.Select(MapToResponse).ToList();
         }
 
@@ -65,11 +50,33 @@ namespace RestroPlate.Services
             return requests.Select(MapToResponse).ToList();
         }
 
+        public async Task<DonationRequestResponseDto> UpdateDonationRequestQuantityAsync(int donationRequestId, decimal donatedQuantity)
+        {
+            var donationRequest = await _donationRequestRepository.GetByIdAsync(donationRequestId);
+            if (donationRequest == null)
+                throw new KeyNotFoundException("Donation Request not found.");
+
+            if (donatedQuantity <= 0)
+                throw new ArgumentException("Donated quantity must be greater than zero.");
+
+            donationRequest.RequestedQuantity -= donatedQuantity;
+
+            if (donationRequest.RequestedQuantity <= 0)
+            {
+                donationRequest.RequestedQuantity = 0;
+                donationRequest.Status = "completed";
+            }
+
+            var updated = await _donationRequestRepository.UpdateAsync(donationRequest);
+            if (!updated)
+                throw new KeyNotFoundException("Donation Request not found.");
+
+            return MapToResponse(donationRequest);
+        }
+
         private static DonationRequestResponseDto MapToResponse(DonationRequest donationRequest) => new()
         {
             DonationRequestId = donationRequest.DonationRequestId,
-            DonationId = donationRequest.DonationId,
-            ProviderUserId = donationRequest.ProviderUserId,
             DistributionCenterUserId = donationRequest.DistributionCenterUserId,
             RequestedQuantity = donationRequest.RequestedQuantity,
             Status = donationRequest.Status,
@@ -78,13 +85,16 @@ namespace RestroPlate.Services
             Unit = donationRequest.Unit
         };
 
-        private static void ValidateCreateRequest(CreateDonationRequestRequestDto request)
+        private static void ValidateCreateRequest(CreateDonationRequestDto request)
         {
-            if (request.DonationId <= 0)
-                throw new ArgumentException("Donation ID must be greater than zero.");
+            if (string.IsNullOrWhiteSpace(request.FoodType))
+                throw new ArgumentException("Food type is required.");
 
             if (request.RequestedQuantity <= 0)
                 throw new ArgumentException("Requested quantity must be greater than zero.");
+                
+            if (string.IsNullOrWhiteSpace(request.Unit))
+                throw new ArgumentException("Unit is required.");
         }
 
         private static string? NormalizeStatus(string? status)
@@ -94,7 +104,7 @@ namespace RestroPlate.Services
 
             var normalizedStatus = status.Trim().ToLowerInvariant();
             if (!AllowedRequestStatuses.Contains(normalizedStatus))
-                throw new ArgumentException("Status must be one of: pending, approved, rejected.");
+                throw new ArgumentException("Status must be one of: pending, completed.");
 
             return normalizedStatus;
         }

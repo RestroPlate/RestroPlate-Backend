@@ -14,10 +14,12 @@ public class DonationServiceTests
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.CreateAsync(It.IsAny<Donation>())).ReturnsAsync(10);
+        
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Cooked rice",
             Quantity = 5,
@@ -42,9 +44,10 @@ public class DonationServiceTests
     {
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
-        var service = new DonationService(mockRepo.Object);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Sandwich",
             Quantity = 0,
@@ -64,9 +67,10 @@ public class DonationServiceTests
     {
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
-        var service = new DonationService(mockRepo.Object);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Bread",
             Quantity = 1,
@@ -104,9 +108,10 @@ public class DonationServiceTests
         };
 
         var mockRepo = new Mock<IDonationRepository>();
-        mockRepo.Setup(r => r.GetByUserIdAsync(3)).ReturnsAsync(donations);
+        mockRepo.Setup(r => r.GetByUserIdAsync(3, null)).ReturnsAsync(donations);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act
         var result = await service.GetUserDonationsAsync(3);
@@ -118,7 +123,7 @@ public class DonationServiceTests
         Assert.Equal("Vegetable curry", donation.FoodType);
         Assert.Equal("available", donation.Status);
         Assert.Equal(createdAt, donation.CreatedAt);
-        mockRepo.Verify(r => r.GetByUserIdAsync(3), Times.Once);
+        mockRepo.Verify(r => r.GetByUserIdAsync(3, null), Times.Once);
     }
 
     [Fact]
@@ -129,8 +134,9 @@ public class DonationServiceTests
         mockRepo
             .Setup(r => r.GetByUserIdAsync(5, "requested"))
             .ReturnsAsync(new List<Donation>());
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act
         var result = await service.GetUserDonationsAsync(5, " Requested ");
@@ -145,7 +151,8 @@ public class DonationServiceTests
     {
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
-        var service = new DonationService(mockRepo.Object);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.GetUserDonationsAsync(5, "archived"));
@@ -184,8 +191,9 @@ public class DonationServiceTests
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(11, 4)).ReturnsAsync(existingDonation);
         mockRepo.Setup(r => r.UpdateAsync(It.IsAny<Donation>())).ReturnsAsync(true);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act
         var result = await service.UpdateDonationAsync(11, 4, request);
@@ -235,8 +243,9 @@ public class DonationServiceTests
 
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(12, 4)).ReturnsAsync(existingDonation);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateDonationAsync(12, 4, request));
@@ -260,8 +269,9 @@ public class DonationServiceTests
 
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(99, 4)).ReturnsAsync((Donation?)null);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.UpdateDonationAsync(99, 4, request));
@@ -289,8 +299,9 @@ public class DonationServiceTests
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(15, 6)).ReturnsAsync(existingDonation);
         mockRepo.Setup(r => r.DeleteAsync(15, 6)).ReturnsAsync(true);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act
         await service.DeleteDonationAsync(15, 6);
@@ -319,8 +330,9 @@ public class DonationServiceTests
 
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(16, 6)).ReturnsAsync(existingDonation);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteDonationAsync(16, 6));
@@ -334,8 +346,9 @@ public class DonationServiceTests
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.GetByIdAsync(17, 6)).ReturnsAsync((Donation?)null);
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.DeleteDonationAsync(17, 6));

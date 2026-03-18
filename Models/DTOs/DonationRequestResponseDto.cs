@@ -3,8 +3,6 @@ namespace RestroPlate.Models.DTOs
     public class DonationRequestResponseDto
     {
         public int DonationRequestId { get; set; }
-        public int DonationId { get; set; }
-        public int ProviderUserId { get; set; }
         public int DistributionCenterUserId { get; set; }
         public decimal RequestedQuantity { get; set; }
         public string Status { get; set; } = string.Empty;
