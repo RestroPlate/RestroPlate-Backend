@@ -78,6 +78,8 @@ namespace RestroPlate.Services
         {
             DonationRequestId = donationRequest.DonationRequestId,
             DistributionCenterUserId = donationRequest.DistributionCenterUserId,
+            DistributionCenterName = donationRequest.DistributionCenterName,
+            DistributionCenterAddress = donationRequest.DistributionCenterAddress,
             RequestedQuantity = donationRequest.RequestedQuantity,
             Status = donationRequest.Status,
             CreatedAt = donationRequest.CreatedAt,

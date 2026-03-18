@@ -4,6 +4,8 @@ namespace RestroPlate.Models
     {
         public int DonationRequestId { get; set; }
         public int DistributionCenterUserId { get; set; }
+        public string DistributionCenterName { get; set; } = string.Empty;
+        public string DistributionCenterAddress { get; set; } = string.Empty;
         public decimal RequestedQuantity { get; set; }
         public string Status { get; set; } = "pending";
         public DateTime CreatedAt { get; set; }

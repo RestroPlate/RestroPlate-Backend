@@ -45,11 +45,14 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
-                FROM dbo.donation_requests
-                WHERE status = 'pending'
-                  AND (@Status IS NULL OR status = @Status)
-                ORDER BY created_at DESC;";
+                SELECT dr.donation_request_id, dr.distribution_center_user_id, dr.requested_quantity,
+                       dr.status, dr.created_at, dr.food_type, dr.unit,
+                       u.name AS distribution_center_name, u.address AS distribution_center_address
+                FROM dbo.donation_requests dr
+                INNER JOIN dbo.users u ON u.user_id = dr.distribution_center_user_id
+                WHERE dr.status = 'pending'
+                  AND (@Status IS NULL OR dr.status = @Status)
+                ORDER BY dr.created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
@@ -59,7 +62,10 @@ namespace RestroPlate.Repository
 
             while (await reader.ReadAsync())
             {
-                donationRequests.Add(MapDonationRequest(reader));
+                var request = MapDonationRequest(reader);
+                request.DistributionCenterName = reader.GetString(reader.GetOrdinal("distribution_center_name"));
+                request.DistributionCenterAddress = reader.GetString(reader.GetOrdinal("distribution_center_address"));
+                donationRequests.Add(request);
             }
 
             return donationRequests;
