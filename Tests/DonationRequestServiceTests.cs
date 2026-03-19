@@ -91,4 +91,55 @@ public class DonationRequestServiceTests
         Assert.Equal("Status must be one of: pending, completed.", exception.Message);
         requestRepo.Verify(r => r.GetByDistributionCenterUserIdAsync(It.IsAny<int>(), It.IsAny<string?>()), Times.Never);
     }
+
+    [Theory]
+    [InlineData(10, 5, 5, "pending")]
+    [InlineData(10, 10, 10, "completed")]
+    [InlineData(10, 12, 12, "completed")]
+    [InlineData(10, -5, 0, "pending")]
+    public async Task UpdateDonationRequestQuantityAsync_CalculatesQuantityAndStatusCorrecty(decimal requested, decimal increment, decimal expectedDonated, string expectedStatus)
+    {
+        var existingRequest = new DonationRequest
+        {
+            DonationRequestId = 1,
+            RequestedQuantity = requested,
+            DonatedQuantity = 0,
+            Status = "pending"
+        };
+
+        var requestRepo = new Mock<IDonationRequestRepository>();
+        requestRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingRequest);
+        requestRepo.Setup(r => r.UpdateAsync(It.IsAny<DonationRequest>())).ReturnsAsync(true);
+
+        var service = new DonationRequestService(requestRepo.Object);
+        var result = await service.UpdateDonationRequestQuantityAsync(1, increment);
+
+        Assert.Equal(expectedDonated, result.DonatedQuantity);
+        Assert.Equal(expectedStatus, result.Status);
+        requestRepo.Verify(r => r.UpdateAsync(It.Is<DonationRequest>(dr => 
+            dr.DonatedQuantity == expectedDonated && 
+            dr.Status == expectedStatus)), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDonationRequestQuantityAsync_WhenDecreasingBelowRequested_ChangesCompletedToPending()
+    {
+        var existingRequest = new DonationRequest
+        {
+            DonationRequestId = 1,
+            RequestedQuantity = 10,
+            DonatedQuantity = 10,
+            Status = "completed"
+        };
+
+        var requestRepo = new Mock<IDonationRequestRepository>();
+        requestRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingRequest);
+        requestRepo.Setup(r => r.UpdateAsync(It.IsAny<DonationRequest>())).ReturnsAsync(true);
+
+        var service = new DonationRequestService(requestRepo.Object);
+        var result = await service.UpdateDonationRequestQuantityAsync(1, -2);
+
+        Assert.Equal(8, result.DonatedQuantity);
+        Assert.Equal("pending", result.Status);
+    }
 }

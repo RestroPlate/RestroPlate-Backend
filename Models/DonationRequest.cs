@@ -7,6 +7,7 @@ namespace RestroPlate.Models
         public string DistributionCenterName { get; set; } = string.Empty;
         public string DistributionCenterAddress { get; set; } = string.Empty;
         public decimal RequestedQuantity { get; set; }
+        public decimal DonatedQuantity { get; set; }
         public string Status { get; set; } = "pending";
         public DateTime CreatedAt { get; set; }
         public string FoodType { get; set; } = string.Empty;

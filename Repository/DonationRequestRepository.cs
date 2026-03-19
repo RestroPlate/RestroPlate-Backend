@@ -17,15 +17,16 @@ namespace RestroPlate.Repository
             
             const string sql = @"
                 INSERT INTO dbo.donation_requests
-                (distribution_center_user_id, food_type, requested_quantity, unit, status)
+                (distribution_center_user_id, food_type, requested_quantity, donated_quantity, unit, status)
                 OUTPUT INSERTED.donation_request_id, INSERTED.created_at
                 VALUES
-                (@DistributionCenterUserId, @FoodType, @RequestedQuantity, @Unit, @Status);";
+                (@DistributionCenterUserId, @FoodType, @RequestedQuantity, @DonatedQuantity, @Unit, @Status);";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@DistributionCenterUserId", donationRequest.DistributionCenterUserId);
             command.Parameters.AddWithValue("@FoodType", donationRequest.FoodType);
             command.Parameters.AddWithValue("@RequestedQuantity", donationRequest.RequestedQuantity);
+            command.Parameters.AddWithValue("@DonatedQuantity", donationRequest.DonatedQuantity);
             command.Parameters.AddWithValue("@Unit", donationRequest.Unit);
             command.Parameters.AddWithValue("@Status", donationRequest.Status);
 
@@ -45,7 +46,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT dr.donation_request_id, dr.distribution_center_user_id, dr.requested_quantity,
+                SELECT dr.donation_request_id, dr.distribution_center_user_id, dr.requested_quantity, dr.donated_quantity,
                        dr.status, dr.created_at, dr.food_type, dr.unit,
                        u.name AS distribution_center_name, u.address AS distribution_center_address
                 FROM dbo.donation_requests dr
@@ -77,7 +78,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
+                SELECT donation_request_id, distribution_center_user_id, requested_quantity, donated_quantity, status, created_at, food_type, unit
                 FROM dbo.donation_requests
                 WHERE distribution_center_user_id = @DistributionCenterUserId
                   AND (@Status IS NULL OR status = @Status)
@@ -104,7 +105,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_request_id, distribution_center_user_id, requested_quantity, status, created_at, food_type, unit
+                SELECT donation_request_id, distribution_center_user_id, requested_quantity, donated_quantity, status, created_at, food_type, unit
                 FROM dbo.donation_requests
                 WHERE donation_request_id = @DonationRequestId;";
 
@@ -127,6 +128,7 @@ namespace RestroPlate.Repository
                 UPDATE dbo.donation_requests
                 SET food_type = @FoodType,
                     requested_quantity = @RequestedQuantity,
+                    donated_quantity = @DonatedQuantity,
                     unit = @Unit,
                     status = @Status
                 WHERE donation_request_id = @DonationRequestId;";
@@ -135,6 +137,7 @@ namespace RestroPlate.Repository
             command.Parameters.AddWithValue("@DonationRequestId", donationRequest.DonationRequestId);
             command.Parameters.AddWithValue("@FoodType", donationRequest.FoodType);
             command.Parameters.AddWithValue("@RequestedQuantity", donationRequest.RequestedQuantity);
+            command.Parameters.AddWithValue("@DonatedQuantity", donationRequest.DonatedQuantity);
             command.Parameters.AddWithValue("@Unit", donationRequest.Unit);
             command.Parameters.AddWithValue("@Status", donationRequest.Status);
 
@@ -147,6 +150,7 @@ namespace RestroPlate.Repository
             DonationRequestId = reader.GetInt32(reader.GetOrdinal("donation_request_id")),
             DistributionCenterUserId = reader.GetInt32(reader.GetOrdinal("distribution_center_user_id")),
             RequestedQuantity = reader.GetDecimal(reader.GetOrdinal("requested_quantity")),
+            DonatedQuantity = reader.GetDecimal(reader.GetOrdinal("donated_quantity")),
             Status = reader.GetString(reader.GetOrdinal("status")),
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
             FoodType = reader.GetString(reader.GetOrdinal("food_type")),
