@@ -83,6 +83,8 @@ builder.Services.AddScoped<IDonationRepository, DonationRepository>();
 builder.Services.AddScoped<IDonationService, DonationService>();
 builder.Services.AddScoped<IDonationRequestRepository, DonationRequestRepository>();
 builder.Services.AddScoped<IDonationRequestService, DonationRequestService>();
+builder.Services.AddScoped<IDistributionInventoryRepository, DistributionInventoryRepository>();
+builder.Services.AddScoped<IDistributionInventoryService, DistributionInventoryService>();
 
 // ── Build ───────────────────────────────────────────────────────────────────
 var app = builder.Build();
