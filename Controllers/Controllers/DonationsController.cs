@@ -23,7 +23,7 @@ namespace RestroPlate.Controllers.Controllers
         [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> CreateDonation([FromBody] CreateDonationRequestDto request)
+        public async Task<IActionResult> CreateDonation([FromBody] CreateDonationDto request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

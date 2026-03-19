@@ -11,8 +11,8 @@ namespace RestroPlate.Repository.Database
 
         public ConnectionFactory(IConfiguration configuration)
         {
-            // We will configure this in appsettings.json later
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
         }
 
         public IDbConnection CreateConnection()

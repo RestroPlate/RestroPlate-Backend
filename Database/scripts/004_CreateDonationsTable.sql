@@ -3,6 +3,7 @@ BEGIN
     CREATE TABLE dbo.donations
     (
         donation_id INT IDENTITY(1,1) NOT NULL,
+        donation_request_id INT NULL,
         provider_user_id INT NOT NULL,
         food_type NVARCHAR(225) NOT NULL,
         quantity DECIMAL(10, 2) NOT NULL,
@@ -14,6 +15,7 @@ BEGIN
         created_at DATETIME2 NOT NULL CONSTRAINT DF_donations_created_at DEFAULT SYSUTCDATETIME(),
 
         CONSTRAINT PK_donations PRIMARY KEY (donation_id),
+        CONSTRAINT FK_donations_donation_requests FOREIGN KEY (donation_request_id) REFERENCES dbo.donation_requests(donation_request_id),
         CONSTRAINT FK_donations_users_provider FOREIGN KEY (provider_user_id) REFERENCES dbo.users(user_id),
         CONSTRAINT CK_donations_status CHECK (status IN ('available', 'requested', 'collected')),
         CONSTRAINT CK_donations_quantity CHECK (quantity > 0)
