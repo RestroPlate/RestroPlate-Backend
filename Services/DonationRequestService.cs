@@ -55,16 +55,19 @@ namespace RestroPlate.Services
             var donationRequest = await _donationRequestRepository.GetByIdAsync(donationRequestId);
             if (donationRequest == null)
                 throw new KeyNotFoundException("Donation Request not found.");
+                
+            donationRequest.DonatedQuantity += donatedQuantity;
+            
+            if (donationRequest.DonatedQuantity < 0)
+                donationRequest.DonatedQuantity = 0;
 
-            if (donatedQuantity <= 0)
-                throw new ArgumentException("Donated quantity must be greater than zero.");
-
-            donationRequest.RequestedQuantity -= donatedQuantity;
-
-            if (donationRequest.RequestedQuantity <= 0)
+            if (donationRequest.DonatedQuantity >= donationRequest.RequestedQuantity)
             {
-                donationRequest.RequestedQuantity = 0;
                 donationRequest.Status = "completed";
+            }
+            else
+            {
+                donationRequest.Status = "pending";
             }
 
             var updated = await _donationRequestRepository.UpdateAsync(donationRequest);
@@ -81,6 +84,7 @@ namespace RestroPlate.Services
             DistributionCenterName = donationRequest.DistributionCenterName,
             DistributionCenterAddress = donationRequest.DistributionCenterAddress,
             RequestedQuantity = donationRequest.RequestedQuantity,
+            DonatedQuantity = donationRequest.DonatedQuantity,
             Status = donationRequest.Status,
             CreatedAt = donationRequest.CreatedAt,
             FoodType = donationRequest.FoodType,
