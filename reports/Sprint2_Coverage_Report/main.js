@@ -291,11 +291,11 @@ var assemblies = [
     "name": "Models",
     "classes": [
       { "name": "RestroPlate.Models.Donation", "rp": "Models_Donation.html", "cl": 11, "ucl": 0, "cal": 11, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "RestroPlate.Models.DonationRequest", "rp": "Models_DonationRequest.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DonationRequest", "rp": "Models_DonationRequest.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.AuthResponseDto", "rp": "Models_AuthResponseDto.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.CreateDonationDto", "rp": "Models_CreateDonationDto.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 13, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.CreateDonationRequestDto", "rp": "Models_CreateDonationRequestDto.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 9, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "RestroPlate.Models.DTOs.DonationRequestResponseDto", "rp": "Models_DonationRequestResponseDto.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Models.DTOs.DonationRequestResponseDto", "rp": "Models_DonationRequestResponseDto.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.DonationResponseDto", "rp": "Models_DonationResponseDto.html", "cl": 11, "ucl": 0, "cal": 11, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.LoginRequestDto", "rp": "Models_LoginRequestDto.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 8, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Models.DTOs.RegisterRequestDto", "rp": "Models_RegisterRequestDto.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 13, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
@@ -308,7 +308,7 @@ var assemblies = [
     "name": "Services",
     "classes": [
       { "name": "RestroPlate.Services.AuthService", "rp": "Services_AuthService.html", "cl": 83, "ucl": 0, "cal": 83, "tl": 126, "cb": 21, "tb": 28, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "RestroPlate.Services.DonationRequestService", "rp": "Services_DonationRequestService.html", "cl": 54, "ucl": 23, "cal": 77, "tl": 118, "cb": 7, "tb": 18, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "RestroPlate.Services.DonationRequestService", "rp": "Services_DonationRequestService.html", "cl": 76, "ucl": 11, "cal": 87, "tl": 118, "cb": 19, "tb": 30, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "RestroPlate.Services.DonationService", "rp": "Services_DonationService.html", "cl": 156, "ucl": 20, "cal": 176, "tl": 200, "cb": 55, "tb": 86, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
@@ -318,17 +318,9 @@ var metrics = [{ "name": "Crap Score", "abbreviation": "crp", "explanationUrl": 
 var historicCoverageExecutionTimes = [];
 
 var riskHotspotMetrics = [
-      { "name": "Crap Score", "explanationUrl": "https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" },
-      { "name": "Cyclomatic complexity", "explanationUrl": "https://en.wikipedia.org/wiki/Cyclomatic_complexity" },
 ];
 
 var riskHotspots = [
-  {
-    "assembly": "Services", "class": "RestroPlate.Services.DonationRequestService", "reportPath": "Services_DonationRequestService.html", "methodName": "UpdateDonationRequestQuantityAsync()", "methodShortName": "UpdateDonationRequestQuantityAsync()", "fileIndex": 0, "line": 54,
-    "metrics": [
-      { "value": 72, "exceeded": true },
-      { "value": 8, "exceeded": false },
-    ]},
 ];
 
 var branchCoverageAvailable = true;
