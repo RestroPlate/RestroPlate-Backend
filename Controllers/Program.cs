@@ -79,6 +79,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IConnectionFactory, ConnectionFactory>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDonationRepository, DonationRepository>();
+builder.Services.AddScoped<IDonationService, DonationService>();
+builder.Services.AddScoped<IDonationRequestRepository, DonationRequestRepository>();
+builder.Services.AddScoped<IDonationRequestService, DonationRequestService>();
 
 // ── Build ───────────────────────────────────────────────────────────────────
 var app = builder.Build();

@@ -14,10 +14,12 @@ public class DonationServiceTests
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
         mockRepo.Setup(r => r.CreateAsync(It.IsAny<Donation>())).ReturnsAsync(10);
+        
+        var reqRepo = new Mock<IDonationRequestRepository>();
 
-        var service = new DonationService(mockRepo.Object);
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Cooked rice",
             Quantity = 5,
@@ -42,9 +44,10 @@ public class DonationServiceTests
     {
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
-        var service = new DonationService(mockRepo.Object);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Sandwich",
             Quantity = 0,
@@ -64,9 +67,10 @@ public class DonationServiceTests
     {
         // Arrange
         var mockRepo = new Mock<IDonationRepository>();
-        var service = new DonationService(mockRepo.Object);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
 
-        var request = new CreateDonationRequestDto
+        var request = new CreateDonationDto
         {
             FoodType = "Bread",
             Quantity = 1,
@@ -79,5 +83,276 @@ public class DonationServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => service.CreateDonationAsync(1, request));
         mockRepo.Verify(r => r.CreateAsync(It.IsAny<Donation>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetUserDonations_ReturnsMappedDonationsForAuthenticatedUser()
+    {
+        // Arrange
+        var createdAt = DateTime.UtcNow.AddHours(-1);
+        var donations = new List<Donation>
+        {
+            new()
+            {
+                DonationId = 7,
+                ProviderUserId = 3,
+                FoodType = "Vegetable curry",
+                Quantity = 12,
+                Unit = "meals",
+                ExpirationDate = DateTime.UtcNow.AddHours(2),
+                PickupAddress = "12 Temple Road",
+                AvailabilityTime = "6:00 PM - 7:00 PM",
+                Status = "available",
+                CreatedAt = createdAt
+            }
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByUserIdAsync(3, null)).ReturnsAsync(donations);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act
+        var result = await service.GetUserDonationsAsync(3);
+
+        // Assert
+        var donation = Assert.Single(result);
+        Assert.Equal(7, donation.DonationId);
+        Assert.Equal(3, donation.ProviderUserId);
+        Assert.Equal("Vegetable curry", donation.FoodType);
+        Assert.Equal("available", donation.Status);
+        Assert.Equal(createdAt, donation.CreatedAt);
+        mockRepo.Verify(r => r.GetByUserIdAsync(3, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUserDonations_WithValidStatusFilter_NormalizesStatusBeforeQueryingRepository()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo
+            .Setup(r => r.GetByUserIdAsync(5, "requested"))
+            .ReturnsAsync(new List<Donation>());
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act
+        var result = await service.GetUserDonationsAsync(5, " Requested ");
+
+        // Assert
+        Assert.Empty(result);
+        mockRepo.Verify(r => r.GetByUserIdAsync(5, "requested"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUserDonations_WithInvalidStatus_ThrowsArgumentException()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        var reqRepo = new Mock<IDonationRequestRepository>();
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.GetUserDonationsAsync(5, "archived"));
+        Assert.Equal("Status must be one of: available, requested, collected, completed.", exception.Message);
+        mockRepo.Verify(r => r.GetByUserIdAsync(It.IsAny<int>(), It.IsAny<string?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateDonation_WithAvailableDonation_ReturnsUpdatedDonation()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 11,
+            ProviderUserId = 4,
+            FoodType = "Rice",
+            Quantity = 5,
+            Unit = "packs",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Old address",
+            AvailabilityTime = "1:00 PM - 2:00 PM",
+            Status = "available",
+            CreatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+
+        var request = new UpdateDonationRequestDto
+        {
+            FoodType = "Cooked rice",
+            Quantity = 8,
+            Unit = "meals",
+            ExpirationDate = DateTime.UtcNow.AddHours(4),
+            PickupAddress = "New address",
+            AvailabilityTime = "3:00 PM - 5:00 PM"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(11, 4)).ReturnsAsync(existingDonation);
+        mockRepo.Setup(r => r.UpdateAsync(It.IsAny<Donation>())).ReturnsAsync(true);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act
+        var result = await service.UpdateDonationAsync(11, 4, request);
+
+        // Assert
+        Assert.Equal(11, result.DonationId);
+        Assert.Equal("Cooked rice", result.FoodType);
+        Assert.Equal(8, result.Quantity);
+        Assert.Equal("meals", result.Unit);
+        Assert.Equal("New address", result.PickupAddress);
+        Assert.Equal("3:00 PM - 5:00 PM", result.AvailabilityTime);
+        mockRepo.Verify(r => r.GetByIdAsync(11, 4), Times.Once);
+        mockRepo.Verify(r => r.UpdateAsync(It.Is<Donation>(d =>
+            d.DonationId == 11 &&
+            d.ProviderUserId == 4 &&
+            d.Status == "available" &&
+            d.FoodType == "Cooked rice" &&
+            d.Quantity == 8)), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDonation_WithNonAvailableDonation_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 12,
+            ProviderUserId = 4,
+            FoodType = "Bread",
+            Quantity = 3,
+            Unit = "boxes",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Pickup point",
+            AvailabilityTime = "2:00 PM - 4:00 PM",
+            Status = "requested"
+        };
+
+        var request = new UpdateDonationRequestDto
+        {
+            FoodType = "Fresh bread",
+            Quantity = 4,
+            Unit = "boxes",
+            ExpirationDate = DateTime.UtcNow.AddHours(3),
+            PickupAddress = "Updated pickup point",
+            AvailabilityTime = "3:00 PM - 4:00 PM"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(12, 4)).ReturnsAsync(existingDonation);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateDonationAsync(12, 4, request));
+        Assert.Equal("Only available donations can be updated.", exception.Message);
+        mockRepo.Verify(r => r.UpdateAsync(It.IsAny<Donation>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateDonation_WhenDonationDoesNotExist_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var request = new UpdateDonationRequestDto
+        {
+            FoodType = "Soup",
+            Quantity = 6,
+            Unit = "cups",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Center",
+            AvailabilityTime = "5:00 PM - 6:00 PM"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(99, 4)).ReturnsAsync((Donation?)null);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.UpdateDonationAsync(99, 4, request));
+        Assert.Equal("Donation not found.", exception.Message);
+        mockRepo.Verify(r => r.UpdateAsync(It.IsAny<Donation>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteDonation_WithAvailableDonation_DeletesDonation()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 15,
+            ProviderUserId = 6,
+            FoodType = "Rice",
+            Quantity = 5,
+            Unit = "packs",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Pickup point",
+            AvailabilityTime = "1:00 PM - 3:00 PM",
+            Status = "available"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(15, 6)).ReturnsAsync(existingDonation);
+        mockRepo.Setup(r => r.DeleteAsync(15, 6)).ReturnsAsync(true);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act
+        await service.DeleteDonationAsync(15, 6);
+
+        // Assert
+        mockRepo.Verify(r => r.GetByIdAsync(15, 6), Times.Once);
+        mockRepo.Verify(r => r.DeleteAsync(15, 6), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteDonation_WithNonAvailableDonation_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var existingDonation = new Donation
+        {
+            DonationId = 16,
+            ProviderUserId = 6,
+            FoodType = "Bread",
+            Quantity = 2,
+            Unit = "boxes",
+            ExpirationDate = DateTime.UtcNow.AddHours(2),
+            PickupAddress = "Pickup point",
+            AvailabilityTime = "4:00 PM - 5:00 PM",
+            Status = "requested"
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(16, 6)).ReturnsAsync(existingDonation);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteDonationAsync(16, 6));
+        Assert.Equal("Only available donations can be deleted.", exception.Message);
+        mockRepo.Verify(r => r.DeleteAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteDonation_WhenDonationDoesNotExist_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(17, 6)).ReturnsAsync((Donation?)null);
+        var reqRepo = new Mock<IDonationRequestRepository>();
+
+        var service = new DonationService(mockRepo.Object, reqRepo.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.DeleteDonationAsync(17, 6));
+        Assert.Equal("Donation not found.", exception.Message);
+        mockRepo.Verify(r => r.DeleteAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 }

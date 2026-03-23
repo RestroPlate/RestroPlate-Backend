@@ -303,7 +303,6 @@ var assemblies = [
     "name": "Services",
     "classes": [
       { "name": "RestroPlate.Services.AuthService", "rp": "Services_AuthService.html", "cl": 83, "ucl": 0, "cal": 83, "tl": 126, "cb": 21, "tb": 28, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "RestroPlate.Services.DonationService", "rp": "Services_DonationService.html", "cl": 44, "ucl": 8, "cal": 52, "tl": 79, "cb": 8, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 

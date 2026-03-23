@@ -17,12 +17,13 @@ namespace RestroPlate.Repository
 
             const string sql = @"
                 INSERT INTO dbo.donations
-                (provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
+                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
                 OUTPUT INSERTED.donation_id
                 VALUES
-                (@ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
+                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
 
             using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", (object?)donation.DonationRequestId ?? DBNull.Value);
             command.Parameters.AddWithValue("@ProviderUserId", donation.ProviderUserId);
             command.Parameters.AddWithValue("@FoodType", donation.FoodType);
             command.Parameters.AddWithValue("@Quantity", donation.Quantity);
@@ -36,19 +37,21 @@ namespace RestroPlate.Repository
             return result is int id ? id : Convert.ToInt32(result);
         }
 
-        public async Task<IReadOnlyList<Donation>> GetByProviderUserIdAsync(int providerUserId)
+        public async Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId, string? status = null)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
                 FROM dbo.donations
                 WHERE provider_user_id = @ProviderUserId
+                  AND (@Status IS NULL OR status = @Status)
                 ORDER BY created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
+            command.Parameters.AddWithValue("@Status", (object?)status ?? DBNull.Value);
 
             var donations = new List<Donation>();
             using var reader = await command.ExecuteReaderAsync();
@@ -61,9 +64,160 @@ namespace RestroPlate.Repository
             return donations;
         }
 
+        public async Task<Donation?> GetByIdAsync(int donationId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                FROM dbo.donations
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            return MapDonation(reader);
+        }
+
+        public async Task<Donation?> GetByIdAsync(int donationId, int providerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                FROM dbo.donations
+                WHERE donation_id = @DonationId
+                  AND provider_user_id = @ProviderUserId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                return null;
+
+            return MapDonation(reader);
+        }
+
+        public async Task<bool> UpdateAsync(Donation donation)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donations
+                SET food_type = @FoodType,
+                    quantity = @Quantity,
+                    unit = @Unit,
+                    expiration_date = @ExpirationDate,
+                    pickup_address = @PickupAddress,
+                    availability_time = @AvailabilityTime
+                WHERE donation_id = @DonationId
+                  AND provider_user_id = @ProviderUserId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donation.DonationId);
+            command.Parameters.AddWithValue("@ProviderUserId", donation.ProviderUserId);
+            command.Parameters.AddWithValue("@FoodType", donation.FoodType);
+            command.Parameters.AddWithValue("@Quantity", donation.Quantity);
+            command.Parameters.AddWithValue("@Unit", donation.Unit);
+            command.Parameters.AddWithValue("@ExpirationDate", donation.ExpirationDate);
+            command.Parameters.AddWithValue("@PickupAddress", donation.PickupAddress);
+            command.Parameters.AddWithValue("@AvailabilityTime", donation.AvailabilityTime);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
+        public async Task<bool> DeleteAsync(int donationId, int providerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                DELETE FROM dbo.donations
+                WHERE donation_id = @DonationId
+                  AND provider_user_id = @ProviderUserId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@ProviderUserId", providerUserId);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
+        public async Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                FROM dbo.donations
+                WHERE status = 'available'";
+
+            if (!string.IsNullOrWhiteSpace(location))
+                sql += " AND pickup_address LIKE @Location";
+
+            if (!string.IsNullOrWhiteSpace(foodType))
+                sql += " AND food_type LIKE @FoodType";
+
+            sql += sortBy?.ToLowerInvariant() switch
+            {
+                "expirationdate" => " ORDER BY expiration_date ASC",
+                _ => " ORDER BY created_at DESC"
+            };
+
+            sql += ";";
+
+            using var command = new SqlCommand(sql, connection);
+
+            if (!string.IsNullOrWhiteSpace(location))
+                command.Parameters.AddWithValue("@Location", $"%{location.Trim()}%");
+
+            if (!string.IsNullOrWhiteSpace(foodType))
+                command.Parameters.AddWithValue("@FoodType", $"%{foodType.Trim()}%");
+
+            var donations = new List<Donation>();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                donations.Add(MapDonation(reader));
+            }
+
+            return donations;
+        }
+
+        public async Task<decimal> GetTotalFulfilledQuantityAsync(int donationRequestId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT ISNULL(SUM(quantity), 0)
+                FROM dbo.donations
+                WHERE donation_request_id = @DonationRequestId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationRequestId", donationRequestId);
+
+            var result = await command.ExecuteScalarAsync();
+            return Convert.ToDecimal(result ?? 0);
+        }
+
         private static Donation MapDonation(SqlDataReader reader) => new()
         {
             DonationId = reader.GetInt32(reader.GetOrdinal("donation_id")),
+            DonationRequestId = !reader.IsDBNull(reader.GetOrdinal("donation_request_id")) ? reader.GetInt32(reader.GetOrdinal("donation_request_id")) : null,
             ProviderUserId = reader.GetInt32(reader.GetOrdinal("provider_user_id")),
             FoodType = reader.GetString(reader.GetOrdinal("food_type")),
             Quantity = reader.GetDecimal(reader.GetOrdinal("quantity")),
