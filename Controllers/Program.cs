@@ -83,6 +83,8 @@ builder.Services.AddScoped<IDonationRepository, DonationRepository>();
 builder.Services.AddScoped<IDonationService, DonationService>();
 builder.Services.AddScoped<IDonationRequestRepository, DonationRequestRepository>();
 builder.Services.AddScoped<IDonationRequestService, DonationRequestService>();
+// new — inventory log tracking for DC collect actions
+builder.Services.AddScoped<IInventoryLogRepository, InventoryLogRepository>();
 
 // ── Build ───────────────────────────────────────────────────────────────────
 var app = builder.Build();

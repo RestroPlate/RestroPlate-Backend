@@ -154,6 +154,25 @@ namespace RestroPlate.Repository
             return affectedRows > 0;
         }
 
+        // new — atomic status-only update used by request/collect transitions
+        public async Task<bool> UpdateStatusAsync(int donationId, string newStatus)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donations
+                SET status = @Status
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@Status", newStatus);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
         public async Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy)
         {
             using var connection = (SqlConnection)CreateConnection();

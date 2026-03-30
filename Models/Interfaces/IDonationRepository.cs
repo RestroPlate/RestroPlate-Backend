@@ -2,6 +2,7 @@ namespace RestroPlate.Models.Interfaces
 {
     public interface IDonationRepository
     {
+        // exists & correct — skipped
         Task<int> CreateAsync(Donation donation);
         Task<IReadOnlyList<Donation>> GetByUserIdAsync(int providerUserId, string? status = null);
         Task<Donation?> GetByIdAsync(int donationId);
@@ -10,5 +11,8 @@ namespace RestroPlate.Models.Interfaces
         Task<bool> DeleteAsync(int donationId, int providerUserId);
         Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy);
         Task<decimal> GetTotalFulfilledQuantityAsync(int donationRequestId);
+
+        // new — atomic status-only update used by request and collect transitions
+        Task<bool> UpdateStatusAsync(int donationId, string newStatus);
     }
 }
