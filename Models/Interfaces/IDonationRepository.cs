@@ -14,5 +14,8 @@ namespace RestroPlate.Models.Interfaces
 
         // new — atomic status-only update used by request and collect transitions
         Task<bool> UpdateStatusAsync(int donationId, string newStatus);
+
+        // new — atomic update of status + claimed_by_center_user_id (used by claim acceptance)
+        Task<bool> UpdateStatusAndClaimedByAsync(int donationId, string newStatus, int centerUserId);
     }
 }

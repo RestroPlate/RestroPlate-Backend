@@ -43,7 +43,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE provider_user_id = @ProviderUserId
                   AND (@Status IS NULL OR status = @Status)
@@ -70,7 +70,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId;";
 
@@ -90,7 +90,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId
                   AND provider_user_id = @ProviderUserId;";
@@ -173,13 +173,34 @@ namespace RestroPlate.Repository
             return affectedRows > 0;
         }
 
+        // new — atomic update of status + claimed_by_center_user_id (used by claim acceptance)
+        public async Task<bool> UpdateStatusAndClaimedByAsync(int donationId, string newStatus, int centerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donations
+                SET status = @Status,
+                    claimed_by_center_user_id = @CenterUserId
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@Status", newStatus);
+            command.Parameters.AddWithValue("@CenterUserId", centerUserId);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
         public async Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE status = 'available'";
 
@@ -245,6 +266,7 @@ namespace RestroPlate.Repository
             PickupAddress = reader.GetString(reader.GetOrdinal("pickup_address")),
             AvailabilityTime = reader.GetString(reader.GetOrdinal("availability_time")),
             Status = reader.GetString(reader.GetOrdinal("status")),
+            ClaimedByCenterUserId = !reader.IsDBNull(reader.GetOrdinal("claimed_by_center_user_id")) ? reader.GetInt32(reader.GetOrdinal("claimed_by_center_user_id")) : null,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
         };
     }

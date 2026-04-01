@@ -246,6 +246,7 @@ namespace RestroPlate.Services
             PickupAddress = donation.PickupAddress,
             AvailabilityTime = donation.AvailabilityTime,
             Status = donation.Status,
+            ClaimedByCenterUserId = donation.ClaimedByCenterUserId,
             CreatedAt = donation.CreatedAt
         };
 

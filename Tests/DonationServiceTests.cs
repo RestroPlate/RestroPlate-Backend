@@ -246,7 +246,7 @@ public class DonationServiceTests
 
         var service = BuildService(donationRepo: mockRepo);
 
-        var result = await service.RequestDonationAsync(30, dcUserId: 5);
+        var result = await service.RequestDonationAsync(30, distributionCenterUserId: 5);
 
         Assert.Equal("requested", result.Status);
         mockRepo.Verify(r => r.UpdateStatusAsync(30, "requested"), Times.Once);
