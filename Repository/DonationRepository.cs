@@ -17,10 +17,10 @@ namespace RestroPlate.Repository
 
             const string sql = @"
                 INSERT INTO dbo.donations
-                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
+                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id)
                 OUTPUT INSERTED.donation_id
                 VALUES
-                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
+                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status, @ClaimedByCenterUserId);";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@DonationRequestId", (object?)donation.DonationRequestId ?? DBNull.Value);
@@ -32,6 +32,7 @@ namespace RestroPlate.Repository
             command.Parameters.AddWithValue("@PickupAddress", donation.PickupAddress);
             command.Parameters.AddWithValue("@AvailabilityTime", donation.AvailabilityTime);
             command.Parameters.AddWithValue("@Status", donation.Status);
+            command.Parameters.AddWithValue("@ClaimedByCenterUserId", (object?)donation.ClaimedByCenterUserId ?? DBNull.Value);
 
             var result = await command.ExecuteScalarAsync();
             return result is int id ? id : Convert.ToInt32(result);

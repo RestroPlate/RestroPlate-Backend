@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using RestroPlate.Models.Interfaces;
 using RestroPlate.Repository;
 using RestroPlate.Repository.Database;
+using Microsoft.OpenApi;
 using RestroPlate.Services;
 
 // Load .env file at the very beginning
@@ -47,7 +48,27 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer"
+    });
+
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", document),
+            new List<string>()
+        }
+    });
+
+    c.OperationFilter<RestroPlate.Controllers.Swagger.AuthorizeCheckOperationFilter>();
+});
 
 // ── JWT Authentication ──────────────────────────────────────────────────────
 // ASP.NET Core maps JWT__Secret (.env / env var) → JWT:Secret in IConfiguration,

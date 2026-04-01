@@ -63,7 +63,8 @@ namespace RestroPlate.Services
                     ExpirationDate = request.ExpirationDate,
                     PickupAddress = request.PickupAddress.Trim(),
                     AvailabilityTime = request.AvailabilityTime.Trim(),
-                    Status = "requested" // modified: Flow 2 donations start in 'requested' state
+                    Status = "requested", // modified: Flow 2 donations start in 'requested' state
+                    ClaimedByCenterUserId = donationRequest.DistributionCenterUserId
                 };
 
                 var donationId = await _donationRepository.CreateAsync(donation);
