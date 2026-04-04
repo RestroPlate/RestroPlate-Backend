@@ -21,15 +21,18 @@ namespace RestroPlate.Services
         private readonly IDonationRepository _donationRepository;
         private readonly IDonationRequestRepository _donationRequestRepository;
         private readonly IInventoryLogRepository _inventoryLogRepository;
+        private readonly IUserRepository _userRepository;
 
         public DonationService(
             IDonationRepository donationRepository,
             IDonationRequestRepository donationRequestRepository,
-            IInventoryLogRepository inventoryLogRepository)
+            IInventoryLogRepository inventoryLogRepository,
+            IUserRepository userRepository)
         {
             _donationRepository = donationRepository;
             _donationRequestRepository = donationRequestRepository;
             _inventoryLogRepository = inventoryLogRepository;
+            _userRepository = userRepository;
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -182,7 +185,33 @@ namespace RestroPlate.Services
         {
             var normalizedStatus = NormalizeStatus(status);
             var donations = await _donationRepository.GetByUserIdAsync(providerUserId, normalizedStatus);
-            return donations.Select(MapToResponse).ToList();
+
+            var responseList = new List<DonationResponseDto>();
+
+            foreach (var donation in donations)
+            {
+                var responseDto = MapToResponse(donation);
+
+                if (donation.ClaimedByCenterUserId.HasValue)
+                {
+                    var centerUser = await _userRepository.GetByIdAsync(donation.ClaimedByCenterUserId.Value);
+                    if (centerUser != null)
+                    {
+                        responseDto.CenterDetails = new CenterDetailsDto
+                        {
+                            UserId = centerUser.UserId,
+                            Name = centerUser.Name,
+                            Email = centerUser.Email,
+                            PhoneNumber = centerUser.PhoneNumber,
+                            Address = centerUser.Address
+                        };
+                    }
+                }
+
+                responseList.Add(responseDto);
+            }
+
+            return responseList;
         }
 
         // exists & correct — skipped
