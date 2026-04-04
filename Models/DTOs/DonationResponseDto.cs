@@ -14,6 +14,8 @@ namespace RestroPlate.Models.DTOs
         public string Status { get; set; } = string.Empty;
         public int? ClaimedByCenterUserId { get; set; }
         public CenterDetailsDto? CenterDetails { get; set; }
+        public bool IsPublished { get; set; }
+        public int? InventoryLogId { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

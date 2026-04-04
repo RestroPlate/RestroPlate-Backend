@@ -271,20 +271,27 @@ namespace RestroPlate.Services
             foreach (var donation in donations)
             {
                 var responseDto = MapToResponse(donation);
-
-                // Fetch donator details to include in response if needed (optional based on DTO)
-                var providerUser = await _userRepository.GetByIdAsync(donation.ProviderUserId);
-                if (providerUser != null)
-                {
-                    // If we want to include provider details we could just do it via CenterDetails
-                    // But maybe simply mapping is enough as requested. We'll simply map.
-                    // Wait, Donor info is part of CenterDetailsDto in GetUserDonationsAsync so maybe not here.
-                }
-
                 responseList.Add(responseDto);
             }
 
             return responseList;
+        }
+
+        public async Task UpdateInventoryPublishStatusAsync(int inventoryLogId, int distributionCenterUserId, bool isPublished)
+        {
+            var log = await _inventoryLogRepository.GetByIdAsync(inventoryLogId);
+            if (log == null)
+                throw new KeyNotFoundException($"Inventory log with ID {inventoryLogId} not found.");
+
+            if (log.DistributionCenterUserId != distributionCenterUserId)
+                throw new UnauthorizedAccessException("You are not authorized to publish this inventory.");
+
+            await _inventoryLogRepository.UpdateIsPublishedAsync(inventoryLogId, isPublished);
+        }
+
+        public async Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync()
+        {
+            return await _inventoryLogRepository.GetPublishedInventoryAsync();
         }
 
         // ── Mapping ────────────────────────────────────────────────────────────
@@ -301,6 +308,8 @@ namespace RestroPlate.Services
             AvailabilityTime = donation.AvailabilityTime,
             Status = donation.Status,
             ClaimedByCenterUserId = donation.ClaimedByCenterUserId,
+            IsPublished = donation.IsPublished,
+            InventoryLogId = donation.InventoryLogId,
             CreatedAt = donation.CreatedAt
         };
 

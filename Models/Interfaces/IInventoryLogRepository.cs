@@ -6,5 +6,8 @@ namespace RestroPlate.Models.Interfaces
     public interface IInventoryLogRepository
     {
         Task<InventoryLogResponseDto> CreateAsync(InventoryLog inventoryLog);
+        Task UpdateIsPublishedAsync(int inventoryLogId, bool isPublished);
+        Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync();
+        Task<InventoryLog?> GetByIdAsync(int inventoryLogId);
     }
 }

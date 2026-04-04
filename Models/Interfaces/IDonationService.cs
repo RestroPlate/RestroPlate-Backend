@@ -19,5 +19,9 @@ namespace RestroPlate.Models.Interfaces
 
         // new — shared (Flow 1 + Flow 2): DC collects; logs to inventory; updates DonationRequest if linked
         Task<InventoryLogResponseDto> CollectDonationAsync(int donationId, int distributionCenterUserId, CollectDonationDto request);
+        
+        // new — publishing inventory
+        Task UpdateInventoryPublishStatusAsync(int inventoryLogId, int distributionCenterUserId, bool isPublished);
+        Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync();
     }
 }

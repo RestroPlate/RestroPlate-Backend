@@ -19,16 +19,17 @@ namespace RestroPlate.Repository
 
             const string sql = @"
                 INSERT INTO dbo.inventory_logs
-                (donation_id, donation_request_id, distribution_center_user_id, collected_amount)
+                (donation_id, donation_request_id, distribution_center_user_id, collected_amount, is_published)
                 OUTPUT INSERTED.inventory_log_id, INSERTED.collected_at
                 VALUES
-                (@DonationId, @DonationRequestId, @DistributionCenterUserId, @CollectedAmount);";
+                (@DonationId, @DonationRequestId, @DistributionCenterUserId, @CollectedAmount, @IsPublished);";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@DonationId", inventoryLog.DonationId);
             command.Parameters.AddWithValue("@DonationRequestId", (object?)inventoryLog.DonationRequestId ?? DBNull.Value);
             command.Parameters.AddWithValue("@DistributionCenterUserId", inventoryLog.DistributionCenterUserId);
             command.Parameters.AddWithValue("@CollectedAmount", inventoryLog.CollectedAmount);
+            command.Parameters.AddWithValue("@IsPublished", inventoryLog.IsPublished);
 
             using var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
@@ -44,7 +45,80 @@ namespace RestroPlate.Repository
                 DonationRequestId = inventoryLog.DonationRequestId,
                 DistributionCenterUserId = inventoryLog.DistributionCenterUserId,
                 CollectedAmount = inventoryLog.CollectedAmount,
+                IsPublished = inventoryLog.IsPublished,
                 CollectedAt = inventoryLog.CollectedAt
+            };
+        }
+
+        public async Task UpdateIsPublishedAsync(int inventoryLogId, bool isPublished)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = "UPDATE dbo.inventory_logs SET is_published = @IsPublished WHERE inventory_log_id = @Id";
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@IsPublished", isPublished);
+            command.Parameters.AddWithValue("@Id", inventoryLogId);
+
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync()
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, is_published, collected_at
+                FROM dbo.inventory_logs
+                WHERE is_published = 1
+                ORDER BY collected_at DESC";
+
+            using var command = new SqlCommand(sql, connection);
+            using var reader = await command.ExecuteReaderAsync();
+
+            var logs = new List<InventoryLogResponseDto>();
+            while (await reader.ReadAsync())
+            {
+                logs.Add(new InventoryLogResponseDto
+                {
+                    InventoryLogId = reader.GetInt32(0),
+                    DonationId = reader.GetInt32(1),
+                    DonationRequestId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                    DistributionCenterUserId = reader.GetInt32(3),
+                    CollectedAmount = reader.GetDecimal(4),
+                    IsPublished = reader.GetBoolean(5),
+                    CollectedAt = reader.GetDateTime(6)
+                });
+            }
+            return logs;
+        }
+
+        public async Task<InventoryLog?> GetByIdAsync(int inventoryLogId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, is_published, collected_at
+                FROM dbo.inventory_logs
+                WHERE inventory_log_id = @Id";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Id", inventoryLogId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync()) return null;
+
+            return new InventoryLog
+            {
+                InventoryLogId = reader.GetInt32(0),
+                DonationId = reader.GetInt32(1),
+                DonationRequestId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                DistributionCenterUserId = reader.GetInt32(3),
+                CollectedAmount = reader.GetDecimal(4),
+                IsPublished = reader.GetBoolean(5),
+                CollectedAt = reader.GetDateTime(6)
             };
         }
     }
