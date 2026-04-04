@@ -8,13 +8,16 @@ namespace RestroPlate.Services
     {
         private readonly IDonationClaimRepository _claimRepository;
         private readonly IDonationRepository _donationRepository;
+        private readonly IUserRepository _userRepository;
 
         public DonationClaimService(
             IDonationClaimRepository claimRepository,
-            IDonationRepository donationRepository)
+            IDonationRepository donationRepository,
+            IUserRepository userRepository)
         {
             _claimRepository = claimRepository;
             _donationRepository = donationRepository;
+            _userRepository = userRepository;
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -46,7 +49,8 @@ namespace RestroPlate.Services
             var created = await _claimRepository.GetByIdAsync(claimId)
                 ?? throw new InvalidOperationException("Failed to retrieve created claim.");
 
-            return MapToResponse(created);
+            var centerUser = await _userRepository.GetByIdAsync(centerUserId);
+            return MapToResponse(created, centerUser);
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -88,7 +92,8 @@ namespace RestroPlate.Services
             var updated = await _claimRepository.GetByIdAsync(claimId)
                 ?? throw new InvalidOperationException("Failed to retrieve updated claim.");
 
-            return MapToResponse(updated);
+            var centerUser = await _userRepository.GetByIdAsync(updated.CenterUserId);
+            return MapToResponse(updated, centerUser);
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -97,7 +102,15 @@ namespace RestroPlate.Services
         public async Task<IReadOnlyList<DonationClaimResponseDto>> GetClaimsByDonatorAsync(int donatorUserId)
         {
             var claims = await _claimRepository.GetByDonatorUserIdAsync(donatorUserId);
-            return claims.Select(MapToResponse).ToList();
+            var results = new List<DonationClaimResponseDto>();
+
+            foreach (var claim in claims)
+            {
+                var centerUser = await _userRepository.GetByIdAsync(claim.CenterUserId);
+                results.Add(MapToResponse(claim, centerUser));
+            }
+
+            return results;
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -106,11 +119,13 @@ namespace RestroPlate.Services
         public async Task<IReadOnlyList<DonationClaimResponseDto>> GetClaimsByCenterAsync(int centerUserId)
         {
             var claims = await _claimRepository.GetByCenterUserIdAsync(centerUserId);
-            return claims.Select(MapToResponse).ToList();
+            var centerUser = await _userRepository.GetByIdAsync(centerUserId);
+            
+            return claims.Select(c => MapToResponse(c, centerUser)).ToList();
         }
 
         // ── Mapping ────────────────────────────────────────────────────────────
-        private static DonationClaimResponseDto MapToResponse(DonationClaim claim)
+        private static DonationClaimResponseDto MapToResponse(DonationClaim claim, User? centerUser = null)
         {
             return new DonationClaimResponseDto
             {
@@ -119,7 +134,17 @@ namespace RestroPlate.Services
                 CenterUserId = claim.CenterUserId,
                 DonatorUserId = claim.DonatorUserId,
                 Status = claim.Status,
-                CreatedAt = claim.CreatedAt
+                CreatedAt = claim.CreatedAt,
+                Center = centerUser == null ? null : new UserProfileDto
+                {
+                    UserId = centerUser.UserId,
+                    Name = centerUser.Name,
+                    Email = centerUser.Email,
+                    Role = centerUser.UserType,
+                    PhoneNumber = string.IsNullOrWhiteSpace(centerUser.PhoneNumber) ? null : centerUser.PhoneNumber,
+                    Address = string.IsNullOrWhiteSpace(centerUser.Address) ? null : centerUser.Address,
+                    CreatedAt = centerUser.CreatedAt
+                }
             };
         }
     }
