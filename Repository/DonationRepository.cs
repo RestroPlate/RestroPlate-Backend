@@ -238,6 +238,32 @@ namespace RestroPlate.Repository
             return donations;
         }
 
+        public async Task<IReadOnlyList<Donation>> GetCenterInventoryAsync(int centerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
+                FROM dbo.donations
+                WHERE claimed_by_center_user_id = @CenterUserId
+                  AND status IN ('requested', 'collected')
+                ORDER BY created_at DESC;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@CenterUserId", centerUserId);
+
+            var donations = new List<Donation>();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                donations.Add(MapDonation(reader));
+            }
+
+            return donations;
+        }
+
         public async Task<decimal> GetTotalFulfilledQuantityAsync(int donationRequestId)
         {
             using var connection = (SqlConnection)CreateConnection();

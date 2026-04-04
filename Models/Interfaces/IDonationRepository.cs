@@ -12,6 +12,9 @@ namespace RestroPlate.Models.Interfaces
         Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy);
         Task<decimal> GetTotalFulfilledQuantityAsync(int donationRequestId);
 
+        // new — get inventory for a distribution center
+        Task<IReadOnlyList<Donation>> GetCenterInventoryAsync(int centerUserId);
+
         // new — atomic status-only update used by request and collect transitions
         Task<bool> UpdateStatusAsync(int donationId, string newStatus);
 

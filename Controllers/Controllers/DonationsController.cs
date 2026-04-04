@@ -143,46 +143,7 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
-        /// <summary>
-        /// Shared (Flow 1 + Flow 2): DC collects a requested donation.
-        /// Transitions: requested → collected. Adds entry to DC inventory. Returns updated inventory log.
-        /// PATCH /api/donations/{id}/collect
-        /// </summary>
-        // new
-        [HttpPatch("{id:int}/collect")]
-        [Authorize(Roles = "DISTRIBUTION_CENTER")]
-        [ProducesResponseType(typeof(InventoryLogResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> CollectDonation(int id, [FromBody] CollectDonationDto request)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            var userId = GetAuthenticatedUserId();
-            if (userId is null)
-                return Unauthorized(new { message = "Invalid token." });
-
-            try
-            {
-                var inventoryLog = await _donationService.CollectDonationAsync(id, userId.Value, request);
-                return Ok(inventoryLog);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message }); // 409 for invalid status transition
-            }
-        }
 
         /// <summary>
         /// Donor updates an available donation.

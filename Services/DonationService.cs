@@ -263,6 +263,30 @@ namespace RestroPlate.Services
             return donations.Select(MapToResponse).ToList();
         }
 
+        public async Task<IReadOnlyList<DonationResponseDto>> GetCenterInventoryAsync(int distributionCenterUserId)
+        {
+            var donations = await _donationRepository.GetCenterInventoryAsync(distributionCenterUserId);
+
+            var responseList = new List<DonationResponseDto>();
+            foreach (var donation in donations)
+            {
+                var responseDto = MapToResponse(donation);
+
+                // Fetch donator details to include in response if needed (optional based on DTO)
+                var providerUser = await _userRepository.GetByIdAsync(donation.ProviderUserId);
+                if (providerUser != null)
+                {
+                    // If we want to include provider details we could just do it via CenterDetails
+                    // But maybe simply mapping is enough as requested. We'll simply map.
+                    // Wait, Donor info is part of CenterDetailsDto in GetUserDonationsAsync so maybe not here.
+                }
+
+                responseList.Add(responseDto);
+            }
+
+            return responseList;
+        }
+
         // ── Mapping ────────────────────────────────────────────────────────────
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {

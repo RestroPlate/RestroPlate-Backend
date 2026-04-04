@@ -10,6 +10,9 @@ namespace RestroPlate.Models.Interfaces
         Task<DonationResponseDto> UpdateDonationAsync(int donationId, int providerUserId, UpdateDonationRequestDto request);
         Task DeleteDonationAsync(int donationId, int providerUserId);
         Task<IReadOnlyList<DonationResponseDto>> GetAvailableDonationsAsync(string? location, string? foodType, string? sortBy);
+        
+        // new — DC views their claimed donations (inventory)
+        Task<IReadOnlyList<DonationResponseDto>> GetCenterInventoryAsync(int distributionCenterUserId);
 
         // new — Flow 1: DC requests a donation (available → requested)
         Task<DonationResponseDto> RequestDonationAsync(int donationId, int distributionCenterUserId);

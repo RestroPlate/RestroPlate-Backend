@@ -415,6 +415,43 @@ public class DonationServiceTests
         Assert.Equal("Status must be one of: available, requested, collected.", exception.Message);
     }
 
+    // ── GetCenterInventory ───────────────────────────────────────────────────
+    
+    [Fact]
+    public async Task GetCenterInventory_ReturnsMappedDonationsForCenter()
+    {
+        var createdAt = DateTime.UtcNow.AddHours(-1);
+        var donations = new List<Donation>
+        {
+            new()
+            {
+                DonationId = 8,
+                ProviderUserId = 3,
+                ClaimedByCenterUserId = 12,
+                FoodType = "Apples",
+                Quantity = 50,
+                Unit = "kg",
+                ExpirationDate = DateTime.UtcNow.AddHours(48),
+                PickupAddress = "Farm",
+                AvailabilityTime = "Morning",
+                Status = "requested",
+                CreatedAt = createdAt
+            }
+        };
+
+        var mockRepo = new Mock<IDonationRepository>();
+        mockRepo.Setup(r => r.GetCenterInventoryAsync(12)).ReturnsAsync(donations);
+        var service = BuildService(donationRepo: mockRepo);
+
+        var result = await service.GetCenterInventoryAsync(12);
+
+        var donation = Assert.Single(result);
+        Assert.Equal(8, donation.DonationId);
+        Assert.Equal("requested", donation.Status);
+        Assert.Equal(12, donation.ClaimedByCenterUserId);
+        mockRepo.Verify(r => r.GetCenterInventoryAsync(12), Times.Once);
+    }
+
     // ── UpdateDonation ────────────────────────────────────────────────────────
 
     [Fact]
