@@ -294,6 +294,48 @@ namespace RestroPlate.Services
             return await _inventoryLogRepository.GetPublishedInventoryAsync();
         }
 
+        public async Task<InventoryLogResponseDto> UpdateDistributedQuantityAsync(int inventoryLogId, int distributionCenterUserId, decimal addedQuantity)
+        {
+            if (addedQuantity <= 0)
+                throw new ArgumentException("Distributed quantity must be greater than zero.");
+
+            var log = await _inventoryLogRepository.GetByIdAsync(inventoryLogId);
+            if (log == null)
+                throw new KeyNotFoundException($"Inventory log with ID {inventoryLogId} not found.");
+
+            if (log.DistributionCenterUserId != distributionCenterUserId)
+                throw new UnauthorizedAccessException("You are not authorized to update this inventory.");
+
+            var newTotalDistributed = log.DistributedQuantity + addedQuantity;
+            if (newTotalDistributed > log.CollectedAmount)
+                throw new InvalidOperationException($"Cannot distribute more than collected amount ({log.CollectedAmount:F2}). Current distributed: {log.DistributedQuantity:F2}, additional requested: {addedQuantity:F2}");
+
+            await _inventoryLogRepository.UpdateDistributedQuantityAsync(inventoryLogId, addedQuantity);
+            
+            // Update local object for response
+            log.DistributedQuantity = newTotalDistributed;
+
+            // User Requirement: if distributed quantity equals collected quantity, update donation as collected.
+            // (Note: It's likely already 'collected' from the collection step, but we follow the logic path)
+            if (newTotalDistributed == log.CollectedAmount)
+            {
+                await _donationRepository.UpdateStatusAsync(log.DonationId, "collected");
+                Console.WriteLine($"[event:donation.fully_distributed] DonationId={log.DonationId} status set to collected.");
+            }
+
+            return new InventoryLogResponseDto
+            {
+                InventoryLogId = log.InventoryLogId,
+                DonationId = log.DonationId,
+                DonationRequestId = log.DonationRequestId,
+                DistributionCenterUserId = log.DistributionCenterUserId,
+                CollectedAmount = log.CollectedAmount,
+                DistributedQuantity = log.DistributedQuantity,
+                IsPublished = log.IsPublished,
+                CollectedAt = log.CollectedAt
+            };
+        }
+
         // ── Mapping ────────────────────────────────────────────────────────────
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
@@ -310,6 +352,8 @@ namespace RestroPlate.Services
             ClaimedByCenterUserId = donation.ClaimedByCenterUserId,
             IsPublished = donation.IsPublished,
             InventoryLogId = donation.InventoryLogId,
+            CollectedAmount = donation.CollectedAmount,
+            DistributedQuantity = donation.DistributedQuantity,
             CreatedAt = donation.CreatedAt
         };
 

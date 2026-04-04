@@ -45,6 +45,7 @@ namespace RestroPlate.Repository
                 DonationRequestId = inventoryLog.DonationRequestId,
                 DistributionCenterUserId = inventoryLog.DistributionCenterUserId,
                 CollectedAmount = inventoryLog.CollectedAmount,
+                DistributedQuantity = 0,
                 IsPublished = inventoryLog.IsPublished,
                 CollectedAt = inventoryLog.CollectedAt
             };
@@ -69,7 +70,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, is_published, collected_at
+                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, distributed_quantity, is_published, collected_at
                 FROM dbo.inventory_logs
                 WHERE is_published = 1
                 ORDER BY collected_at DESC";
@@ -87,8 +88,9 @@ namespace RestroPlate.Repository
                     DonationRequestId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
                     DistributionCenterUserId = reader.GetInt32(3),
                     CollectedAmount = reader.GetDecimal(4),
-                    IsPublished = reader.GetBoolean(5),
-                    CollectedAt = reader.GetDateTime(6)
+                    DistributedQuantity = reader.GetDecimal(5),
+                    IsPublished = reader.GetBoolean(6),
+                    CollectedAt = reader.GetDateTime(7)
                 });
             }
             return logs;
@@ -100,7 +102,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, is_published, collected_at
+                SELECT inventory_log_id, donation_id, donation_request_id, distribution_center_user_id, collected_amount, distributed_quantity, is_published, collected_at
                 FROM dbo.inventory_logs
                 WHERE inventory_log_id = @Id";
 
@@ -117,9 +119,27 @@ namespace RestroPlate.Repository
                 DonationRequestId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
                 DistributionCenterUserId = reader.GetInt32(3),
                 CollectedAmount = reader.GetDecimal(4),
+                DistributedQuantity = reader.GetDecimal(reader.GetOrdinal("distributed_quantity")),
                 IsPublished = reader.GetBoolean(5),
                 CollectedAt = reader.GetDateTime(6)
             };
+        }
+
+        public async Task UpdateDistributedQuantityAsync(int inventoryLogId, decimal addedQuantity)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.inventory_logs 
+                SET distributed_quantity = distributed_quantity + @AddedQuantity 
+                WHERE inventory_log_id = @Id";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@AddedQuantity", addedQuantity);
+            command.Parameters.AddWithValue("@Id", inventoryLogId);
+
+            await command.ExecuteNonQueryAsync();
         }
     }
 }

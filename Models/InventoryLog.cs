@@ -8,6 +8,7 @@ namespace RestroPlate.Models
         public int? DonationRequestId { get; set; }
         public int DistributionCenterUserId { get; set; }
         public decimal CollectedAmount { get; set; }
+        public decimal DistributedQuantity { get; set; }
         public bool IsPublished { get; set; }
         public DateTime CollectedAt { get; set; }
     }
