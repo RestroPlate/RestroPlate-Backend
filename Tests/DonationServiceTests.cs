@@ -14,12 +14,14 @@ public class DonationServiceTests
     private static DonationService BuildService(
         Mock<IDonationRepository>? donationRepo = null,
         Mock<IDonationRequestRepository>? requestRepo = null,
-        Mock<IInventoryLogRepository>? inventoryRepo = null)
+        Mock<IInventoryLogRepository>? inventoryRepo = null,
+        Mock<IUserRepository>? userRepo = null)
     {
         return new DonationService(
             (donationRepo ?? new Mock<IDonationRepository>()).Object,
             (requestRepo ?? new Mock<IDonationRequestRepository>()).Object,
-            (inventoryRepo ?? new Mock<IInventoryLogRepository>()).Object);
+            (inventoryRepo ?? new Mock<IInventoryLogRepository>()).Object,
+            (userRepo ?? new Mock<IUserRepository>()).Object);
     }
 
     // ── Flow 1: CreateDonation (standalone, no DonationRequestId) ────────────

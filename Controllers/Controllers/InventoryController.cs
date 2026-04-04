@@ -97,7 +97,7 @@ namespace RestroPlate.Controllers.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
                 return Forbid(); // 403 if trying to publish someone else's log
             }
