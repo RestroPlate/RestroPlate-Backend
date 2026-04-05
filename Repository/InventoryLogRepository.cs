@@ -141,5 +141,59 @@ namespace RestroPlate.Repository
 
             await command.ExecuteNonQueryAsync();
         }
+
+        public async Task<IEnumerable<CenterWithDonationsDto>> GetCentersWithPublishedDonationsAsync()
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT 
+                    u.user_id, u.name, u.address, u.phone_number,
+                    il.inventory_log_id, il.collected_amount, il.distributed_quantity, il.collected_at,
+                    d.food_type, d.expiration_date, d.donation_id, d.unit
+                FROM dbo.users u
+                LEFT JOIN dbo.inventory_logs il ON u.user_id = il.distribution_center_user_id AND il.is_published = 1
+                LEFT JOIN dbo.donations d ON il.donation_id = d.donation_id
+                WHERE u.user_type = 'DISTRIBUTION_CENTER'
+                ORDER BY u.name, il.collected_at DESC";
+
+            using var command = new SqlCommand(sql, connection);
+            using var reader = await command.ExecuteReaderAsync();
+
+            var centersMap = new Dictionary<int, CenterWithDonationsDto>();
+
+            while (await reader.ReadAsync())
+            {
+                int userId = reader.GetInt32(0);
+                if (!centersMap.TryGetValue(userId, out var center))
+                {
+                    center = new CenterWithDonationsDto
+                    {
+                        CenterId = userId,
+                        Name = reader.GetString(1),
+                        Address = reader.GetString(2),
+                        PhoneNumber = reader.GetString(3),
+                        PublishedDonations = new List<PublishedDonationDto>()
+                    };
+                    centersMap.Add(userId, center);
+                }
+
+                if (!reader.IsDBNull(4)) // inventory_log_id
+                {
+                    center.PublishedDonations.Add(new PublishedDonationDto
+                    {
+                        DonationId = reader.GetInt32(10),
+                        FoodType = reader.GetString(8),
+                        Quantity = reader.GetDecimal(5), // collected_amount acts as current available quantity header
+                        Unit = reader.GetString(11),
+                        ExpirationDate = reader.GetDateTime(9),
+                        CollectedAt = reader.GetDateTime(7)
+                    });
+                }
+            }
+
+            return centersMap.Values;
+        }
     }
 }

@@ -24,5 +24,6 @@ namespace RestroPlate.Models.Interfaces
         Task UpdateInventoryPublishStatusAsync(int inventoryLogId, int distributionCenterUserId, bool isPublished);
         Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync();
         Task<InventoryLogResponseDto> UpdateDistributedQuantityAsync(int inventoryLogId, int distributionCenterUserId, decimal addedQuantity);
+        Task<IEnumerable<CenterWithDonationsDto>> GetPublicCentersWithDonationsAsync();
     }
 }

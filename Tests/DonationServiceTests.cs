@@ -664,4 +664,23 @@ public class DonationServiceTests
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             service.UpdateDistributedQuantityAsync(logId, 5, 2m));
     }
+
+    [Fact]
+    public async Task GetPublicCentersWithDonations_CallsRepository()
+    {
+        // new — verification for the new public endpoint logic
+        var mockInvRepo = new Mock<IInventoryLogRepository>();
+        var expectedData = new List<CenterWithDonationsDto>
+        {
+            new() { CenterId = 1, Name = "Center A" }
+        };
+        mockInvRepo.Setup(r => r.GetCentersWithPublishedDonationsAsync()).ReturnsAsync(expectedData);
+
+        var service = BuildService(inventoryRepo: mockInvRepo);
+
+        var result = await service.GetPublicCentersWithDonationsAsync();
+
+        Assert.Equal(expectedData, result);
+        mockInvRepo.Verify(r => r.GetCentersWithPublishedDonationsAsync(), Times.Once);
+    }
 }

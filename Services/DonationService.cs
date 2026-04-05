@@ -336,6 +336,11 @@ namespace RestroPlate.Services
             };
         }
 
+        public async Task<IEnumerable<CenterWithDonationsDto>> GetPublicCentersWithDonationsAsync()
+        {
+            return await _inventoryLogRepository.GetCentersWithPublishedDonationsAsync();
+        }
+
         // ── Mapping ────────────────────────────────────────────────────────────
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
