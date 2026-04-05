@@ -9,7 +9,7 @@ namespace RestroPlate.Services
         // ─── Valid statuses and allowed transitions ─────────────────────────────
         private static readonly HashSet<string> AllowedStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
-            "available", "requested", "collected"
+            "available", "requested", "collected", "completed"
         };
 
         // Status machine: key = current status allowed for that transition
@@ -336,6 +336,11 @@ namespace RestroPlate.Services
             };
         }
 
+        public async Task<IEnumerable<CenterWithDonationsDto>> GetPublicCentersWithDonationsAsync()
+        {
+            return await _inventoryLogRepository.GetCentersWithPublishedDonationsAsync();
+        }
+
         // ── Mapping ────────────────────────────────────────────────────────────
         private static DonationResponseDto MapToResponse(Donation donation) => new()
         {
@@ -396,7 +401,7 @@ namespace RestroPlate.Services
                 return null;
             var normalizedStatus = status.Trim().ToLowerInvariant();
             if (!AllowedStatuses.Contains(normalizedStatus))
-                throw new ArgumentException("Status must be one of: available, requested, collected.");
+                throw new ArgumentException("Status must be one of: available, requested, collected, completed.");
             return normalizedStatus;
         }
 
