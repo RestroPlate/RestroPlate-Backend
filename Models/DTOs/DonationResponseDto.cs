@@ -12,6 +12,8 @@ namespace RestroPlate.Models.DTOs
         public string PickupAddress { get; set; } = string.Empty;
         public string AvailabilityTime { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public int? ClaimedByCenterUserId { get; set; }
+        public CenterDetailsDto? CenterDetails { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }
