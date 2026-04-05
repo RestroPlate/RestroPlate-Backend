@@ -315,12 +315,12 @@ namespace RestroPlate.Services
             // Update local object for response
             log.DistributedQuantity = newTotalDistributed;
 
-            // User Requirement: if distributed quantity equals collected quantity, update donation as collected.
-            // (Note: It's likely already 'collected' from the collection step, but we follow the logic path)
+            // User Requirement: if distributed quantity equals collected quantity, update donation as completed.
+            // This signals that the entire collected inventory has been distributed to consumers.
             if (newTotalDistributed == log.CollectedAmount)
             {
-                await _donationRepository.UpdateStatusAsync(log.DonationId, "collected");
-                Console.WriteLine($"[event:donation.fully_distributed] DonationId={log.DonationId} status set to collected.");
+                await _donationRepository.UpdateStatusAsync(log.DonationId, "completed");
+                Console.WriteLine($"[event:donation.fully_distributed] DonationId={log.DonationId} status set to completed.");
             }
 
             return new InventoryLogResponseDto

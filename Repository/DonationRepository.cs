@@ -252,7 +252,6 @@ namespace RestroPlate.Repository
                 FROM dbo.donations d
                 LEFT JOIN dbo.inventory_logs il ON d.donation_id = il.donation_id AND il.distribution_center_user_id = @CenterUserId
                 WHERE d.claimed_by_center_user_id = @CenterUserId
-                  AND d.status IN ('requested', 'collected')
                 ORDER BY d.created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);

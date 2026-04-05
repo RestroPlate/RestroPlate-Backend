@@ -119,9 +119,9 @@ namespace RestroPlate.Repository
                 DonationRequestId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
                 DistributionCenterUserId = reader.GetInt32(3),
                 CollectedAmount = reader.GetDecimal(4),
-                DistributedQuantity = reader.GetDecimal(reader.GetOrdinal("distributed_quantity")),
-                IsPublished = reader.GetBoolean(5),
-                CollectedAt = reader.GetDateTime(6)
+                DistributedQuantity = reader.GetDecimal(5),
+                IsPublished = reader.GetBoolean(6),
+                CollectedAt = reader.GetDateTime(7)
             };
         }
 
