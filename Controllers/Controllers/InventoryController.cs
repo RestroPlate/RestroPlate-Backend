@@ -74,6 +74,47 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        /// <summary>
+        /// DC toggles whether their collected inventory is published to the community.
+        /// </summary>
+        [HttpPatch("{id:int}/publish")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PublishInventory(int id, [FromBody] bool isPublished)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                await _donationService.UpdateInventoryPublishStatusAsync(id, userId.Value, isPublished);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid(); // 403 if trying to publish someone else's log
+            }
+        }
+
+        /// <summary>
+        /// Public endpoint to view all published inventory by Distribution Centers.
+        /// </summary>
+        [HttpGet("published")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IReadOnlyList<InventoryLogResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPublishedInventory()
+        {
+            var publishedInventory = await _donationService.GetPublishedInventoryAsync();
+            return Ok(publishedInventory);
+        }
+
         private int? GetAuthenticatedUserId()
         {
             var subClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)

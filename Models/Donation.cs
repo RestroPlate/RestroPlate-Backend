@@ -13,6 +13,8 @@ namespace RestroPlate.Models
         public string AvailabilityTime { get; set; } = string.Empty;
         public string Status { get; set; } = "available";
         public int? ClaimedByCenterUserId { get; set; }
+        public bool IsPublished { get; set; }
+        public int? InventoryLogId { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

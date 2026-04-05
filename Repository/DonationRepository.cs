@@ -244,11 +244,14 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
-                FROM dbo.donations
-                WHERE claimed_by_center_user_id = @CenterUserId
-                  AND status IN ('requested', 'collected')
-                ORDER BY created_at DESC;";
+                SELECT d.donation_id, d.donation_request_id, d.provider_user_id, d.food_type, d.quantity, d.unit, d.expiration_date, d.pickup_address, d.availability_time, d.status, d.claimed_by_center_user_id, d.created_at,
+                       ISNULL(il.is_published, 0) as is_published,
+                       il.inventory_log_id
+                FROM dbo.donations d
+                LEFT JOIN dbo.inventory_logs il ON d.donation_id = il.donation_id AND il.distribution_center_user_id = @CenterUserId
+                WHERE d.claimed_by_center_user_id = @CenterUserId
+                  AND d.status IN ('requested', 'collected')
+                ORDER BY d.created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@CenterUserId", centerUserId);
@@ -294,7 +297,19 @@ namespace RestroPlate.Repository
             AvailabilityTime = reader.GetString(reader.GetOrdinal("availability_time")),
             Status = reader.GetString(reader.GetOrdinal("status")),
             ClaimedByCenterUserId = !reader.IsDBNull(reader.GetOrdinal("claimed_by_center_user_id")) ? reader.GetInt32(reader.GetOrdinal("claimed_by_center_user_id")) : null,
+            IsPublished = HasColumn(reader, "is_published") && !reader.IsDBNull(reader.GetOrdinal("is_published")) && reader.GetBoolean(reader.GetOrdinal("is_published")),
+            InventoryLogId = HasColumn(reader, "inventory_log_id") && !reader.IsDBNull(reader.GetOrdinal("inventory_log_id")) ? reader.GetInt32(reader.GetOrdinal("inventory_log_id")) : null,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
         };
+
+        private static bool HasColumn(SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
     }
 }
