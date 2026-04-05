@@ -115,6 +115,48 @@ namespace RestroPlate.Controllers.Controllers
             return Ok(publishedInventory);
         }
 
+        /// <summary>
+        /// DC records quantity distributed to consumers.
+        /// If distributed matches collected, donation is marked as fully handled.
+        /// </summary>
+        [HttpPatch("logs/{id:int}/distribute")]
+        [ProducesResponseType(typeof(InventoryLogResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DistributeInventory(int id, [FromBody] UpdateDistributedQuantityDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                var updatedLog = await _donationService.UpdateDistributedQuantityAsync(id, userId.Value, request.DistributedQuantity);
+                return Ok(updatedLog);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private int? GetAuthenticatedUserId()
         {
             var subClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)

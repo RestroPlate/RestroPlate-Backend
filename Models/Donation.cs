@@ -15,6 +15,8 @@ namespace RestroPlate.Models
         public int? ClaimedByCenterUserId { get; set; }
         public bool IsPublished { get; set; }
         public int? InventoryLogId { get; set; }
+        public decimal? CollectedAmount { get; set; }
+        public decimal? DistributedQuantity { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

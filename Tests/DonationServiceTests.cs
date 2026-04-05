@@ -557,4 +557,111 @@ public class DonationServiceTests
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => service.DeleteDonationAsync(17, 6));
         Assert.Equal("Donation not found.", exception.Message);
     }
+
+    // ── UpdateDistributedQuantity ───────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateDistributedQuantity_WhenValid_UpdatesQuantityAndCallsRepository()
+    {
+        // new — happy path
+        var logId = 100;
+        var centerUserId = 5;
+        var donationId = 50;
+        var log = new InventoryLog
+        {
+            InventoryLogId = logId,
+            DonationId = donationId,
+            DistributionCenterUserId = centerUserId,
+            CollectedAmount = 10m,
+            DistributedQuantity = 2m
+        };
+
+        var mockInvRepo = new Mock<IInventoryLogRepository>();
+        mockInvRepo.Setup(r => r.GetByIdAsync(logId)).ReturnsAsync(log);
+        mockInvRepo.Setup(r => r.UpdateDistributedQuantityAsync(logId, 3m)).Returns(Task.CompletedTask);
+
+        var mockDonRepo = new Mock<IDonationRepository>();
+
+        var service = BuildService(inventoryRepo: mockInvRepo, donationRepo: mockDonRepo);
+
+        var result = await service.UpdateDistributedQuantityAsync(logId, centerUserId, 3m);
+
+        Assert.Equal(5m, result.DistributedQuantity);
+        mockInvRepo.Verify(r => r.UpdateDistributedQuantityAsync(logId, 3m), Times.Once);
+        mockDonRepo.Verify(r => r.UpdateStatusAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateDistributedQuantity_WhenFullyDistributed_UpdatesDonationStatus()
+    {
+        // new — edge case: fully distributed
+        var logId = 101;
+        var centerUserId = 5;
+        var donationId = 51;
+        var log = new InventoryLog
+        {
+            InventoryLogId = logId,
+            DonationId = donationId,
+            DistributionCenterUserId = centerUserId,
+            CollectedAmount = 10m,
+            DistributedQuantity = 7m
+        };
+
+        var mockInvRepo = new Mock<IInventoryLogRepository>();
+        mockInvRepo.Setup(r => r.GetByIdAsync(logId)).ReturnsAsync(log);
+        mockInvRepo.Setup(r => r.UpdateDistributedQuantityAsync(logId, 3m)).Returns(Task.CompletedTask);
+
+        var mockDonRepo = new Mock<IDonationRepository>();
+        mockDonRepo.Setup(r => r.UpdateStatusAsync(donationId, "collected")).ReturnsAsync(true);
+
+        var service = BuildService(inventoryRepo: mockInvRepo, donationRepo: mockDonRepo);
+
+        var result = await service.UpdateDistributedQuantityAsync(logId, centerUserId, 3m);
+
+        Assert.Equal(10m, result.DistributedQuantity);
+        mockDonRepo.Verify(r => r.UpdateStatusAsync(donationId, "collected"), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDistributedQuantity_WhenExceedsCollected_ThrowsInvalidOperationException()
+    {
+        // new — validation error
+        var logId = 102;
+        var centerUserId = 5;
+        var log = new InventoryLog
+        {
+            InventoryLogId = logId,
+            DistributionCenterUserId = centerUserId,
+            CollectedAmount = 10m,
+            DistributedQuantity = 8m
+        };
+
+        var mockInvRepo = new Mock<IInventoryLogRepository>();
+        mockInvRepo.Setup(r => r.GetByIdAsync(logId)).ReturnsAsync(log);
+
+        var service = BuildService(inventoryRepo: mockInvRepo);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateDistributedQuantityAsync(logId, centerUserId, 3m));
+    }
+
+    [Fact]
+    public async Task UpdateDistributedQuantity_WhenNotOwner_ThrowsUnauthorizedAccessException()
+    {
+        // new — security check
+        var logId = 103;
+        var log = new InventoryLog
+        {
+            InventoryLogId = logId,
+            DistributionCenterUserId = 99 // different owner
+        };
+
+        var mockInvRepo = new Mock<IInventoryLogRepository>();
+        mockInvRepo.Setup(r => r.GetByIdAsync(logId)).ReturnsAsync(log);
+
+        var service = BuildService(inventoryRepo: mockInvRepo);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            service.UpdateDistributedQuantityAsync(logId, 5, 2m));
+    }
 }

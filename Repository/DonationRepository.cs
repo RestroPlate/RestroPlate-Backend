@@ -246,11 +246,12 @@ namespace RestroPlate.Repository
             const string sql = @"
                 SELECT d.donation_id, d.donation_request_id, d.provider_user_id, d.food_type, d.quantity, d.unit, d.expiration_date, d.pickup_address, d.availability_time, d.status, d.claimed_by_center_user_id, d.created_at,
                        ISNULL(il.is_published, 0) as is_published,
-                       il.inventory_log_id
+                       il.inventory_log_id,
+                       il.collected_amount,
+                       il.distributed_quantity
                 FROM dbo.donations d
                 LEFT JOIN dbo.inventory_logs il ON d.donation_id = il.donation_id AND il.distribution_center_user_id = @CenterUserId
                 WHERE d.claimed_by_center_user_id = @CenterUserId
-                  AND d.status IN ('requested', 'collected')
                 ORDER BY d.created_at DESC;";
 
             using var command = new SqlCommand(sql, connection);
@@ -299,6 +300,8 @@ namespace RestroPlate.Repository
             ClaimedByCenterUserId = !reader.IsDBNull(reader.GetOrdinal("claimed_by_center_user_id")) ? reader.GetInt32(reader.GetOrdinal("claimed_by_center_user_id")) : null,
             IsPublished = HasColumn(reader, "is_published") && !reader.IsDBNull(reader.GetOrdinal("is_published")) && reader.GetBoolean(reader.GetOrdinal("is_published")),
             InventoryLogId = HasColumn(reader, "inventory_log_id") && !reader.IsDBNull(reader.GetOrdinal("inventory_log_id")) ? reader.GetInt32(reader.GetOrdinal("inventory_log_id")) : null,
+            CollectedAmount = HasColumn(reader, "collected_amount") && !reader.IsDBNull(reader.GetOrdinal("collected_amount")) ? reader.GetDecimal(reader.GetOrdinal("collected_amount")) : null,
+            DistributedQuantity = HasColumn(reader, "distributed_quantity") && !reader.IsDBNull(reader.GetOrdinal("distributed_quantity")) ? reader.GetDecimal(reader.GetOrdinal("distributed_quantity")) : null,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
         };
 
