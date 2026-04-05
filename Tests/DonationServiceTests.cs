@@ -414,7 +414,7 @@ public class DonationServiceTests
         var service = BuildService();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.GetUserDonationsAsync(5, "archived"));
-        Assert.Equal("Status must be one of: available, requested, collected.", exception.Message);
+        Assert.Equal("Status must be one of: available, requested, collected, completed.", exception.Message);
     }
 
     // ── GetCenterInventory ───────────────────────────────────────────────────
@@ -612,14 +612,14 @@ public class DonationServiceTests
         mockInvRepo.Setup(r => r.UpdateDistributedQuantityAsync(logId, 3m)).Returns(Task.CompletedTask);
 
         var mockDonRepo = new Mock<IDonationRepository>();
-        mockDonRepo.Setup(r => r.UpdateStatusAsync(donationId, "collected")).ReturnsAsync(true);
+        mockDonRepo.Setup(r => r.UpdateStatusAsync(donationId, "completed")).ReturnsAsync(true);
 
         var service = BuildService(inventoryRepo: mockInvRepo, donationRepo: mockDonRepo);
 
         var result = await service.UpdateDistributedQuantityAsync(logId, centerUserId, 3m);
 
         Assert.Equal(10m, result.DistributedQuantity);
-        mockDonRepo.Verify(r => r.UpdateStatusAsync(donationId, "collected"), Times.Once);
+        mockDonRepo.Verify(r => r.UpdateStatusAsync(donationId, "completed"), Times.Once);
     }
 
     [Fact]
