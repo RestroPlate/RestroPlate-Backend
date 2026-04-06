@@ -17,10 +17,10 @@ namespace RestroPlate.Repository
 
             const string sql = @"
                 INSERT INTO dbo.donations
-                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status)
+                (donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id)
                 OUTPUT INSERTED.donation_id
                 VALUES
-                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status);";
+                (@DonationRequestId, @ProviderUserId, @FoodType, @Quantity, @Unit, @ExpirationDate, @PickupAddress, @AvailabilityTime, @Status, @ClaimedByCenterUserId);";
 
             using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@DonationRequestId", (object?)donation.DonationRequestId ?? DBNull.Value);
@@ -32,6 +32,7 @@ namespace RestroPlate.Repository
             command.Parameters.AddWithValue("@PickupAddress", donation.PickupAddress);
             command.Parameters.AddWithValue("@AvailabilityTime", donation.AvailabilityTime);
             command.Parameters.AddWithValue("@Status", donation.Status);
+            command.Parameters.AddWithValue("@ClaimedByCenterUserId", (object?)donation.ClaimedByCenterUserId ?? DBNull.Value);
 
             var result = await command.ExecuteScalarAsync();
             return result is int id ? id : Convert.ToInt32(result);
@@ -43,7 +44,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE provider_user_id = @ProviderUserId
                   AND (@Status IS NULL OR status = @Status)
@@ -70,7 +71,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId;";
 
@@ -90,7 +91,7 @@ namespace RestroPlate.Repository
             await connection.OpenAsync();
 
             const string sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE donation_id = @DonationId
                   AND provider_user_id = @ProviderUserId;";
@@ -154,13 +155,53 @@ namespace RestroPlate.Repository
             return affectedRows > 0;
         }
 
+        // new — atomic status-only update used by request/collect transitions
+        public async Task<bool> UpdateStatusAsync(int donationId, string newStatus)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donations
+                SET status = @Status
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@Status", newStatus);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
+        // new — atomic update of status + claimed_by_center_user_id (used by claim acceptance)
+        public async Task<bool> UpdateStatusAndClaimedByAsync(int donationId, string newStatus, int centerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                UPDATE dbo.donations
+                SET status = @Status,
+                    claimed_by_center_user_id = @CenterUserId
+                WHERE donation_id = @DonationId;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@DonationId", donationId);
+            command.Parameters.AddWithValue("@Status", newStatus);
+            command.Parameters.AddWithValue("@CenterUserId", centerUserId);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            return affectedRows > 0;
+        }
+
         public async Task<IReadOnlyList<Donation>> GetAvailableAsync(string? location, string? foodType, string? sortBy)
         {
             using var connection = (SqlConnection)CreateConnection();
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, created_at
+                SELECT donation_id, donation_request_id, provider_user_id, food_type, quantity, unit, expiration_date, pickup_address, availability_time, status, claimed_by_center_user_id, created_at
                 FROM dbo.donations
                 WHERE status = 'available'";
 
@@ -185,6 +226,36 @@ namespace RestroPlate.Repository
 
             if (!string.IsNullOrWhiteSpace(foodType))
                 command.Parameters.AddWithValue("@FoodType", $"%{foodType.Trim()}%");
+
+            var donations = new List<Donation>();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                donations.Add(MapDonation(reader));
+            }
+
+            return donations;
+        }
+
+        public async Task<IReadOnlyList<Donation>> GetCenterInventoryAsync(int centerUserId)
+        {
+            using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync();
+
+            const string sql = @"
+                SELECT d.donation_id, d.donation_request_id, d.provider_user_id, d.food_type, d.quantity, d.unit, d.expiration_date, d.pickup_address, d.availability_time, d.status, d.claimed_by_center_user_id, d.created_at,
+                       ISNULL(il.is_published, 0) as is_published,
+                       il.inventory_log_id,
+                       il.collected_amount,
+                       il.distributed_quantity
+                FROM dbo.donations d
+                LEFT JOIN dbo.inventory_logs il ON d.donation_id = il.donation_id AND il.distribution_center_user_id = @CenterUserId
+                WHERE d.claimed_by_center_user_id = @CenterUserId
+                ORDER BY d.created_at DESC;";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@CenterUserId", centerUserId);
 
             var donations = new List<Donation>();
             using var reader = await command.ExecuteReaderAsync();
@@ -226,7 +297,22 @@ namespace RestroPlate.Repository
             PickupAddress = reader.GetString(reader.GetOrdinal("pickup_address")),
             AvailabilityTime = reader.GetString(reader.GetOrdinal("availability_time")),
             Status = reader.GetString(reader.GetOrdinal("status")),
+            ClaimedByCenterUserId = !reader.IsDBNull(reader.GetOrdinal("claimed_by_center_user_id")) ? reader.GetInt32(reader.GetOrdinal("claimed_by_center_user_id")) : null,
+            IsPublished = HasColumn(reader, "is_published") && !reader.IsDBNull(reader.GetOrdinal("is_published")) && reader.GetBoolean(reader.GetOrdinal("is_published")),
+            InventoryLogId = HasColumn(reader, "inventory_log_id") && !reader.IsDBNull(reader.GetOrdinal("inventory_log_id")) ? reader.GetInt32(reader.GetOrdinal("inventory_log_id")) : null,
+            CollectedAmount = HasColumn(reader, "collected_amount") && !reader.IsDBNull(reader.GetOrdinal("collected_amount")) ? reader.GetDecimal(reader.GetOrdinal("collected_amount")) : null,
+            DistributedQuantity = HasColumn(reader, "distributed_quantity") && !reader.IsDBNull(reader.GetOrdinal("distributed_quantity")) ? reader.GetDecimal(reader.GetOrdinal("distributed_quantity")) : null,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
         };
+
+        private static bool HasColumn(SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
     }
 }

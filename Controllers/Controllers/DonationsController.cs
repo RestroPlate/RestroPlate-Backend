@@ -18,13 +18,19 @@ namespace RestroPlate.Controllers.Controllers
             _donationService = donationService;
         }
 
+        /// <summary>
+        /// Flow 1: Donor creates a standalone donation (status = available).
+        /// Flow 2: Donor fulfils a pending DC request (DonationRequestId required; status = requested).
+        /// </summary>
         [HttpPost]
         [Authorize(Roles = "DONOR")]
         [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateDonation([FromBody] CreateDonationDto request)
         {
+            // exists & correct — skipped (validation already in service)
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -41,8 +47,20 @@ namespace RestroPlate.Controllers.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message }); // 409 for wrong status transition
+            }
         }
 
+        /// <summary>
+        /// Donor views their own donations, filtered by optional status.
+        /// </summary>
+        // exists & correct — skipped
         [HttpGet]
         [HttpGet("me")]
         [Authorize(Roles = "DONOR")]
@@ -66,6 +84,11 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        /// <summary>
+        /// Flow 1: DC browses available donations.
+        /// GET /api/donations/available
+        /// </summary>
+        // exists & correct — skipped
         [HttpGet("available")]
         [Authorize(Roles = "DISTRIBUTION_CENTER")]
         [ProducesResponseType(typeof(IReadOnlyList<DonationResponseDto>), StatusCodes.Status200OK)]
@@ -87,12 +110,52 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        /// <summary>
+        /// Flow 1: DC requests an available donation.
+        /// Transitions: available → requested. Emits donation.requested event to notify donor.
+        /// PATCH /api/donations/{id}/request
+        /// </summary>
+        // new
+        [HttpPatch("{id:int}/request")]
+        [Authorize(Roles = "DISTRIBUTION_CENTER")]
+        [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> RequestDonation(int id)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId is null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                var donation = await _donationService.RequestDonationAsync(id, userId.Value);
+                return Ok(donation);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message }); // 409 for invalid status transition
+            }
+        }
+
+
+
+        /// <summary>
+        /// Donor updates an available donation.
+        /// </summary>
+        // exists & correct — skipped
         [HttpPut("{id:int}")]
         [Authorize(Roles = "DONOR")]
         [ProducesResponseType(typeof(DonationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> UpdateDonation(int id, [FromBody] UpdateDonationRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -113,7 +176,7 @@ namespace RestroPlate.Controllers.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return Conflict(new { message = ex.Message }); // modified: 409 for wrong status
             }
             catch (KeyNotFoundException ex)
             {
@@ -121,12 +184,17 @@ namespace RestroPlate.Controllers.Controllers
             }
         }
 
+        /// <summary>
+        /// Donor deletes an available donation.
+        /// </summary>
+        // exists & correct — skipped
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "DONOR")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteDonation(int id)
         {
             var userId = GetAuthenticatedUserId();
@@ -140,7 +208,7 @@ namespace RestroPlate.Controllers.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return Conflict(new { message = ex.Message }); // modified: 409 for wrong status
             }
             catch (KeyNotFoundException ex)
             {
