@@ -22,17 +22,20 @@ namespace RestroPlate.Services
         private readonly IDonationRequestRepository _donationRequestRepository;
         private readonly IInventoryLogRepository _inventoryLogRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IDonationImageRepository _imageRepository;
 
         public DonationService(
             IDonationRepository donationRepository,
             IDonationRequestRepository donationRequestRepository,
             IInventoryLogRepository inventoryLogRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IDonationImageRepository imageRepository)
         {
             _donationRepository = donationRepository;
             _donationRequestRepository = donationRequestRepository;
             _inventoryLogRepository = inventoryLogRepository;
             _userRepository = userRepository;
+            _imageRepository = imageRepository;
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ namespace RestroPlate.Services
                 Console.WriteLine($"[event:donation_request.updated] DonationRequestId={donationRequest.DonationRequestId} " +
                                   $"Remaining={Math.Max(0, remaining):F2} Status={donationRequest.Status}");
 
-                return MapToResponse(donation);
+                return await MapToResponseAsync(donation);
             }
             else
             {
@@ -105,7 +108,7 @@ namespace RestroPlate.Services
 
                 var donationId = await _donationRepository.CreateAsync(donation);
                 donation.DonationId = donationId;
-                return MapToResponse(donation);
+                return await MapToResponseAsync(donation);
             }
         }
 
@@ -134,7 +137,7 @@ namespace RestroPlate.Services
             // emit: donation.requested — notifies the donor
             Console.WriteLine($"[event:donation.requested] DonationId={donationId} RequestedBy=DC:{distributionCenterUserId}");
 
-            return MapToResponse(donation);
+            return await MapToResponseAsync(donation);
         }
 
         // ───────────────────────────────────────────────────────────────────────
@@ -190,7 +193,7 @@ namespace RestroPlate.Services
 
             foreach (var donation in donations)
             {
-                var responseDto = MapToResponse(donation);
+                var responseDto = await MapToResponseAsync(donation);
 
                 if (donation.ClaimedByCenterUserId.HasValue)
                 {
@@ -237,7 +240,7 @@ namespace RestroPlate.Services
             if (!updated)
                 throw new KeyNotFoundException("Donation not found.");
 
-            return MapToResponse(existingDonation);
+            return await MapToResponseAsync(existingDonation);
         }
 
         // exists & correct — skipped
@@ -260,7 +263,10 @@ namespace RestroPlate.Services
         {
             var normalizedSort = NormalizeSortBy(sortBy);
             var donations = await _donationRepository.GetAvailableAsync(location, foodType, normalizedSort);
-            return donations.Select(MapToResponse).ToList();
+            var result = new List<DonationResponseDto>();
+            foreach (var d in donations)
+                result.Add(await MapToResponseAsync(d));
+            return result;
         }
 
         public async Task<IReadOnlyList<DonationResponseDto>> GetCenterInventoryAsync(int distributionCenterUserId)
@@ -270,7 +276,7 @@ namespace RestroPlate.Services
             var responseList = new List<DonationResponseDto>();
             foreach (var donation in donations)
             {
-                var responseDto = MapToResponse(donation);
+                var responseDto = await MapToResponseAsync(donation);
                 responseList.Add(responseDto);
             }
 
@@ -342,25 +348,30 @@ namespace RestroPlate.Services
         }
 
         // ── Mapping ────────────────────────────────────────────────────────────
-        private static DonationResponseDto MapToResponse(Donation donation) => new()
+        private async Task<DonationResponseDto> MapToResponseAsync(Donation donation)
         {
-            DonationId = donation.DonationId,
-            DonationRequestId = donation.DonationRequestId,
-            ProviderUserId = donation.ProviderUserId,
-            FoodType = donation.FoodType,
-            Quantity = donation.Quantity,
-            Unit = donation.Unit,
-            ExpirationDate = donation.ExpirationDate,
-            PickupAddress = donation.PickupAddress,
-            AvailabilityTime = donation.AvailabilityTime,
-            Status = donation.Status,
-            ClaimedByCenterUserId = donation.ClaimedByCenterUserId,
-            IsPublished = donation.IsPublished,
-            InventoryLogId = donation.InventoryLogId,
-            CollectedAmount = donation.CollectedAmount,
-            DistributedQuantity = donation.DistributedQuantity,
-            CreatedAt = donation.CreatedAt
-        };
+            var images = await _imageRepository.GetByDonationIdAsync(donation.DonationId);
+            return new DonationResponseDto
+            {
+                DonationId = donation.DonationId,
+                DonationRequestId = donation.DonationRequestId,
+                ProviderUserId = donation.ProviderUserId,
+                FoodType = donation.FoodType,
+                Quantity = donation.Quantity,
+                Unit = donation.Unit,
+                ExpirationDate = donation.ExpirationDate,
+                PickupAddress = donation.PickupAddress,
+                AvailabilityTime = donation.AvailabilityTime,
+                Status = donation.Status,
+                ClaimedByCenterUserId = donation.ClaimedByCenterUserId,
+                IsPublished = donation.IsPublished,
+                InventoryLogId = donation.InventoryLogId,
+                CollectedAmount = donation.CollectedAmount,
+                DistributedQuantity = donation.DistributedQuantity,
+                CreatedAt = donation.CreatedAt,
+                Images = images.ToList()
+            };
+        }
 
         // ── Validation ─────────────────────────────────────────────────────────
         private static void ValidateCreateRequest(CreateDonationDto request)
