@@ -109,9 +109,15 @@ builder.Services.AddScoped<IInventoryLogRepository, InventoryLogRepository>();
 // new — donation claim feature
 builder.Services.AddScoped<IDonationClaimRepository, DonationClaimRepository>();
 builder.Services.AddScoped<IDonationClaimService, DonationClaimService>();
+// new — donation image upload feature
+builder.Services.AddScoped<IDonationImageRepository, DonationImageRepository>();
+builder.Services.AddScoped<IDonationImageService, DonationImageService>();
 
 // ── Build ───────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// Serve uploaded files (e.g. /uploads/donations/...) as static content
+app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
