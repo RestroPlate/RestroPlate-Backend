@@ -181,15 +181,22 @@ namespace RestroPlate.Repository
 
                 if (!reader.IsDBNull(4)) // inventory_log_id
                 {
-                    center.PublishedDonations.Add(new PublishedDonationDto
+                    var collected = reader.GetDecimal(5);     // collected_amount
+                    var distributed = reader.GetDecimal(6);   // distributed_quantity
+                    var remaining = collected - distributed;
+
+                    if (remaining > 0)  // skip fully distributed items
                     {
-                        DonationId = reader.GetInt32(10),
-                        FoodType = reader.GetString(8),
-                        Quantity = reader.GetDecimal(5), // collected_amount acts as current available quantity header
-                        Unit = reader.GetString(11),
-                        ExpirationDate = reader.GetDateTime(9),
-                        CollectedAt = reader.GetDateTime(7)
-                    });
+                        center.PublishedDonations.Add(new PublishedDonationDto
+                        {
+                            DonationId = reader.GetInt32(10),
+                            FoodType = reader.GetString(8),
+                            Quantity = remaining,
+                            Unit = reader.GetString(11),
+                            ExpirationDate = reader.GetDateTime(9),
+                            CollectedAt = reader.GetDateTime(7)
+                        });
+                    }
                 }
             }
 
