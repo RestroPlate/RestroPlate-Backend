@@ -19,5 +19,6 @@ namespace RestroPlate.Models.DTOs
         public decimal? CollectedAmount { get; set; }
         public decimal? DistributedQuantity { get; set; }
         public DateTime CreatedAt { get; set; }
+        public List<DonationImageDto> Images { get; set; } = new();
     }
 }

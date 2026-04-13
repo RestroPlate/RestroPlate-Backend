@@ -16,3 +16,9 @@ obj/
 *.temp
 
 
+wwwroot/uploads/donations/*
+!wwwroot/uploads/donations/.gitkeep
+
+coveragereport/*
+
+Tests/TestResults/*

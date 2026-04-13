@@ -10,18 +10,26 @@ public class DonationServiceTests
 {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    // modified: constructor now requires IInventoryLogRepository; updated all factory calls
+    // modified: constructor now requires IDonationImageRepository; updated all factory calls
     private static DonationService BuildService(
         Mock<IDonationRepository>? donationRepo = null,
         Mock<IDonationRequestRepository>? requestRepo = null,
         Mock<IInventoryLogRepository>? inventoryRepo = null,
-        Mock<IUserRepository>? userRepo = null)
+        Mock<IUserRepository>? userRepo = null,
+        Mock<IDonationImageRepository>? imageRepo = null)
     {
+        // Ensure GetByDonationIdAsync always returns an empty list by default
+        // so MapToResponseAsync never gets a null result from an unset mock.
+        var imgRepo = imageRepo ?? new Mock<IDonationImageRepository>();
+        imgRepo.Setup(r => r.GetByDonationIdAsync(It.IsAny<int>()))
+               .ReturnsAsync(new List<DonationImageDto>());
+
         return new DonationService(
             (donationRepo ?? new Mock<IDonationRepository>()).Object,
             (requestRepo ?? new Mock<IDonationRequestRepository>()).Object,
             (inventoryRepo ?? new Mock<IInventoryLogRepository>()).Object,
-            (userRepo ?? new Mock<IUserRepository>()).Object);
+            (userRepo ?? new Mock<IUserRepository>()).Object,
+            imgRepo.Object);
     }
 
     // ── Flow 1: CreateDonation (standalone, no DonationRequestId) ────────────
