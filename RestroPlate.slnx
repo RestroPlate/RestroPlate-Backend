@@ -3,6 +3,7 @@
   <Project Path="Database/Database.csproj" />
   <Project Path="Models/Models.csproj" />
   <Project Path="Repository/Repository.csproj" />
+  <Project Path="RestroPlate.DonationService/RestroPlate.DonationService.csproj" />
   <Project Path="RestroPlate.IdentityService/RestroPlate.IdentityService.csproj" />
   <Project Path="Services/Services.csproj" />
   <Project Path="Tests/Tests.csproj" />

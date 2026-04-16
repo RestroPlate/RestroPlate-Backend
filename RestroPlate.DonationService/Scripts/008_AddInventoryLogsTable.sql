@@ -7,7 +7,7 @@ BEGIN
         inventory_log_id         INT IDENTITY(1,1)   NOT NULL PRIMARY KEY,
         donation_id              INT                 NOT NULL REFERENCES dbo.donations(donation_id),
         donation_request_id      INT                 NULL     REFERENCES dbo.donation_requests(donation_request_id),
-        distribution_center_user_id INT             NOT NULL REFERENCES dbo.users(user_id),
+        distribution_center_user_id INT             NOT NULL,
         collected_amount         DECIMAL(10,2)       NOT NULL,
         collected_at             DATETIME2           NOT NULL DEFAULT SYSUTCDATETIME()
     );

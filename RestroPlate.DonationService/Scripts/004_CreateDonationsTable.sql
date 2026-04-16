@@ -16,7 +16,6 @@ BEGIN
 
         CONSTRAINT PK_donations PRIMARY KEY (donation_id),
         CONSTRAINT FK_donations_donation_requests FOREIGN KEY (donation_request_id) REFERENCES dbo.donation_requests(donation_request_id),
-        CONSTRAINT FK_donations_users_provider FOREIGN KEY (provider_user_id) REFERENCES dbo.users(user_id),
         CONSTRAINT CK_donations_status CHECK (status IN ('available', 'requested', 'collected')),
         CONSTRAINT CK_donations_quantity CHECK (quantity > 0)
     );
