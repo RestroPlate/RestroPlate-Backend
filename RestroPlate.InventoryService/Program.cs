@@ -1,15 +1,20 @@
 using System.Reflection;
 using System.Text;
 using DbUp;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using RestroPlate.InventoryService.Consumers;
 using RestroPlate.InventoryService.Models.Interfaces;
 using RestroPlate.InventoryService.Repository;
 using RestroPlate.InventoryService.Repository.Database;
 using RestroPlate.InventoryService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")
+    ?? "amqp://guest:guest@localhost:5672/";
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -56,6 +61,21 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddMassTransit(configurator =>
+{
+    configurator.AddConsumer<DonationCreatedConsumer>();
+
+    configurator.UsingRabbitMq((context, busConfigurator) =>
+    {
+        busConfigurator.Host(new Uri(rabbitMqConnectionString));
+
+        busConfigurator.ReceiveEndpoint("donation-created-events", endpointConfigurator =>
+        {
+            endpointConfigurator.ConfigureConsumer<DonationCreatedConsumer>(context);
+        });
+    });
+});
 
 builder.Services.AddTransient<IConnectionFactory, ConnectionFactory>();
 builder.Services.AddScoped<IInventoryLogRepository, InventoryLogRepository>();

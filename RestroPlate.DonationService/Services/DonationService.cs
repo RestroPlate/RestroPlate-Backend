@@ -1,6 +1,8 @@
 using RestroPlate.DonationService.Models;
 using RestroPlate.DonationService.Models.DTOs;
 using RestroPlate.DonationService.Models.Interfaces;
+using MassTransit;
+using RestroPlate.EventContracts;
 
 namespace RestroPlate.DonationService.Services
 {
@@ -19,15 +21,18 @@ namespace RestroPlate.DonationService.Services
         private readonly IDonationRepository _donationRepository;
         private readonly IDonationRequestRepository _donationRequestRepository;
         private readonly IDonationImageRepository _imageRepository;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public DonationService(
             IDonationRepository donationRepository,
             IDonationRequestRepository donationRequestRepository,
-            IDonationImageRepository imageRepository)
+            IDonationImageRepository imageRepository,
+            IPublishEndpoint publishEndpoint)
         {
             _donationRepository = donationRepository;
             _donationRequestRepository = donationRequestRepository;
             _imageRepository = imageRepository;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<DonationResponseDto> CreateDonationAsync(int providerUserId, CreateDonationDto request)
@@ -60,6 +65,13 @@ namespace RestroPlate.DonationService.Services
                 var donationId = await _donationRepository.CreateAsync(donation);
                 donation.DonationId = donationId;
 
+                await _publishEndpoint.Publish(new DonationCreatedEvent(
+                    donation.DonationId,
+                    donation.ProviderUserId,
+                    donation.FoodType,
+                    (double)donation.Quantity,
+                    donation.Unit));
+
                 donationRequest.DonatedQuantity += request.Quantity;
                 var remaining = donationRequest.RequestedQuantity - donationRequest.DonatedQuantity;
                 donationRequest.Status = remaining <= 0 ? "completed" : "pending";
@@ -84,6 +96,14 @@ namespace RestroPlate.DonationService.Services
 
             var createdId = await _donationRepository.CreateAsync(standaloneDonation);
             standaloneDonation.DonationId = createdId;
+
+            await _publishEndpoint.Publish(new DonationCreatedEvent(
+                standaloneDonation.DonationId,
+                standaloneDonation.ProviderUserId,
+                standaloneDonation.FoodType,
+                (double)standaloneDonation.Quantity,
+                standaloneDonation.Unit));
+
             return await MapToResponseAsync(standaloneDonation);
         }
 

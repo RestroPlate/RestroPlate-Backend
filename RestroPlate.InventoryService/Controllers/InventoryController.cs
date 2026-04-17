@@ -73,7 +73,15 @@ namespace RestroPlate.InventoryService.Controllers
 
             try
             {
-                await _inventoryService.UpdateInventoryPublishStatusAsync(id, userId.Value, isPublished);
+                var centerName = User.FindFirstValue("center_name")
+                                ?? User.FindFirstValue(ClaimTypes.Name)
+                                ?? $"Center {userId.Value}";
+
+                var centerAddress = User.FindFirstValue("center_address")
+                                   ?? User.FindFirstValue("address")
+                                   ?? "N/A";
+
+                await _inventoryService.UpdateInventoryPublishStatusAsync(id, userId.Value, isPublished, centerName, centerAddress);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

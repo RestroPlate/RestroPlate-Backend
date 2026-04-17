@@ -2,6 +2,7 @@ using System.Reflection;
 using DotNetEnv;
 using DbUp;
 using MassTransit;
+using RestroPlate.EventContracts;
 using RestroPlate.PublicService.Consumers;
 using RestroPlate.PublicService.Models;
 

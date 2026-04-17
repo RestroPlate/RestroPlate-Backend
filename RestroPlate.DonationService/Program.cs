@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using DbUp;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -10,6 +11,9 @@ using RestroPlate.DonationService.Repository.Database;
 using RestroPlate.DonationService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")
+    ?? "amqp://guest:guest@localhost:5672/";
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -56,6 +60,14 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddMassTransit(configurator =>
+{
+    configurator.UsingRabbitMq((_, busConfigurator) =>
+    {
+        busConfigurator.Host(new Uri(rabbitMqConnectionString));
+    });
+});
 
 builder.Services.AddTransient<IConnectionFactory, ConnectionFactory>();
 builder.Services.AddScoped<IDonationRepository, DonationRepository>();

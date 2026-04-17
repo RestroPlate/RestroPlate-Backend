@@ -1,4 +1,6 @@
 using RestroPlate.InventoryService.DTOs;
+using MassTransit;
+using RestroPlate.EventContracts;
 using RestroPlate.InventoryService.Models;
 using RestroPlate.InventoryService.Models.Interfaces;
 
@@ -7,10 +9,12 @@ namespace RestroPlate.InventoryService.Services
     public class InventoryService : IInventoryService
     {
         private readonly IInventoryLogRepository _inventoryLogRepository;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public InventoryService(IInventoryLogRepository inventoryLogRepository)
+        public InventoryService(IInventoryLogRepository inventoryLogRepository, IPublishEndpoint publishEndpoint)
         {
             _inventoryLogRepository = inventoryLogRepository;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<IReadOnlyList<InventoryLogResponseDto>> GetInventoryAsync(int distributionCenterUserId)
@@ -35,7 +39,7 @@ namespace RestroPlate.InventoryService.Services
             return await _inventoryLogRepository.CreateAsync(inventoryLog);
         }
 
-        public async Task UpdateInventoryPublishStatusAsync(int inventoryLogId, int distributionCenterUserId, bool isPublished)
+        public async Task UpdateInventoryPublishStatusAsync(int inventoryLogId, int distributionCenterUserId, bool isPublished, string? centerName = null, string? centerAddress = null)
         {
             var log = await _inventoryLogRepository.GetByIdAsync(inventoryLogId)
                 ?? throw new KeyNotFoundException($"Inventory log with ID {inventoryLogId} not found.");
@@ -44,6 +48,20 @@ namespace RestroPlate.InventoryService.Services
                 throw new UnauthorizedAccessException("You are not authorized to publish this inventory.");
 
             await _inventoryLogRepository.UpdateIsPublishedAsync(inventoryLogId, isPublished);
+
+            if (isPublished)
+            {
+                await _publishEndpoint.Publish(new InventoryPublishedEvent(
+                    log.DonationId,
+                    distributionCenterUserId,
+                    string.IsNullOrWhiteSpace(centerName) ? $"Center {distributionCenterUserId}" : centerName,
+                    string.IsNullOrWhiteSpace(centerAddress) ? "N/A" : centerAddress,
+                    "Unknown",
+                    (double)log.CollectedAmount,
+                    "unit",
+                    log.CollectedAt
+                ));
+            }
         }
 
         public async Task<IReadOnlyList<InventoryLogResponseDto>> GetPublishedInventoryAsync()

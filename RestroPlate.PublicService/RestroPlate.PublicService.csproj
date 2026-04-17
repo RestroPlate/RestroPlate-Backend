@@ -20,4 +20,8 @@
     <EmbeddedResource Include="Scripts/*.sql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RestroPlate.EventContracts\RestroPlate.EventContracts.csproj" />
+  </ItemGroup>
+
 </Project>

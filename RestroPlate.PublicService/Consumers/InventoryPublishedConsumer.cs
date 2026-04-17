@@ -1,4 +1,5 @@
 using MassTransit;
+using RestroPlate.EventContracts;
 using RestroPlate.PublicService.Models;
 
 namespace RestroPlate.PublicService.Consumers;
