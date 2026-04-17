@@ -6,6 +6,7 @@
   <Project Path="RestroPlate.DonationService/RestroPlate.DonationService.csproj" />
   <Project Path="RestroPlate.IdentityService/RestroPlate.IdentityService.csproj" />
   <Project Path="RestroPlate.InventoryService/RestroPlate.InventoryService.csproj" />
+  <Project Path="RestroPlate.PublicService/RestroPlate.PublicService.csproj" />
   <Project Path="Services/Services.csproj" />
   <Project Path="Tests/Tests.csproj" />
 </Solution>

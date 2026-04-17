@@ -4,6 +4,7 @@ db_connection.txt
 
 # Environment variables
 .env
+local.env
 
 # Build outputs
 bin/
